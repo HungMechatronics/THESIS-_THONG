@@ -71,6 +71,7 @@ function varargout = AGVsystem_OutputFcn(hObject, eventdata, handles)
 
 % Get default command line output from handles structure
 
+%% GUI HANDLING
 global gui_xuatnhap table;
 gui_xuatnhap = TrackingMenu;
 gui_xuatnhap.Visible = 'off';
@@ -81,17 +82,15 @@ varargout{1} = handles.output;
 axes(handles.axes_wh);
 
 %% LAYOUT-LEVEL VARIABLE DEFINE
-global h alp t_stamp goalLine horLine verLine T numberofAGV stopTime;
+global h alp t_stamp T numberofAGV stopTime;
 % AGV's dimension
-l=900 ;w=760; h = sqrt(l^2+w^2)/2;
-alp = acosd(w/sqrt(w^2+l^2));
-
+len_agv=900 ;wid_agv=760; h = sqrt(len_agv^2+wid_agv^2)/2;                 % AGV length and width.
+alp = acosd(wid_agv/sqrt(wid_agv^2+len_agv^2));                            % alpha angle for AGV rotation.
 % Simulation time & number of AGV using
-numberofAGV = 2;
-t_stamp = 0.1;
-T = 0;
-stopTime = 900;
-
+numberofAGV = 2;                                                           % number of AGV on grid.
+t_stamp = 0.1;                                                             % time stamp for updating AGV.
+T = 0;                                                                     % current simulation time.
+stopTime = 900;                                                            % max simulation time.
 % Back-ground color for Layout
 str = '#D7D7D9';
 convertcolor = sscanf(str(2:end),'%2x%2x%2x',[1 3])/255;
@@ -106,14 +105,14 @@ global podsort rectCenter stor nodeArray nodeArr totalgood;
 [podsort,rectCenter,stor,nodeArr] = drawLayout();  
 nodeArray = double(nodeArr);
 totalgood = 0;
-
+% Convert background colors
 % str = '#D7D7D9';
 % convertcolor = sscanf(str(2:end),'%2x%2x%2x',[1 3])/255;
 % set(gca,'Color',convertcolor)
 % set(gca,'SortMethod','childorder');
 
 %% INITIAL POSITION FOR AGV
-global agvArray agvVel agvPosition;
+global agvArray agvVel agvPosition temp;
 % AGV initial name and position
 agvArr(1,1) = agvClass(1,4,0,1);
 agvArr(2,1) = agvClass(1,8,0,2);
@@ -138,6 +137,7 @@ agvArr(2,1).colorface ='g';
 agvArray = agvArr;  
 agvVel = 1300;
 agvPosition = zeros(numberofAGV,7); % x,y,angle,type of mission,< coordinate of goal node >,wsMission
+temp = 0; % for rotation only
 
 %% CREATE AGV DISPLAY USING PATCH
 global patchArray emptyPod;
@@ -172,7 +172,6 @@ for i = 1:size(agvArray,1)
     set(patchArray(i,1),'faces',face,'vertices',vertex,'FaceColor',agvArray(i,1).colorface); 
 end
 
-
 %% A-STAR SET UP OBSTACLE MATRIX
 global podStatic;
 podStatic = zeros(size(stor,1),size(stor,2));
@@ -183,29 +182,24 @@ for i = 1: size(rectCenter,1)
     podStatic(tem1,tem2) = 1;
 end
 
-%%
-global  podStatus wsStatus wsOrdLine podShow;     % Array of AGV position
+%% CONFIGURATION FOR DISTRIBUTING MISSION
+global  podStatus wsStatus wsOrdLine podShow;                              % Array of AGV position
+podShow = zeros(numberofAGV,3);                                            % Patch for pod
+podStatus = zeros(size(rectCenter,1),8);                                   % x of pod ,y of pod,A,B,C,D, isAtStorage? ,isPick ?
+wsOrdLine = char(wsOrdLine);                                               % work station order line as [ABDDCACADBABD]
+wsStatus = [22 40 0 0;45 40 0 0;68 40 0 0;26 1 0 0; 61 1 0 0 ];            % col ,row ,number of goods.
 
-wsStatus = [22 40 0 0;45 40 0 0;68 40 0 0;26 1 0 0; 61 1 0 0 ];  % col ,row ,number of goods.
-podShow = zeros(numberofAGV,3); % Patch for pod
-
-
-
-wsOrdLine = char(wsOrdLine);
-podStatus = zeros(size(rectCenter,1),8); % x of pod ,y of pod,A,B,C,D, isAtStorage? ,isPick ?
-global temp
-temp = 0; % for rotation only
-
+%% COLLISION AVOIDANCE ALGORITHM SET-UP
 global time_window
 time_window = [ 0,0,0,0,0,0,0,0,0,0];% start_node , end_node , agvName , time_in , time_out , next node , previous node
 
-
+%% GENERATE THE ORDER OF PODS
 operators = [65,68]; % ASCII character A B C D
 for i = 1:5
     indexes = randi(operators, 1, 10);
     wsOrdLine(i,:) = char(indexes);          %ws Line of Order
 end
-    
+
 % Generate  podStatus & random A-B-C-D
 % Generate the number of good
 c_ = [];
@@ -216,22 +210,17 @@ for i= 1:26
     c_ = cat(1,c_,a_);
     d_ = cat(1,d_,b_);
 end   
-podStatus(:,1) = c_; % row
-podStatus(:,2) = d_; % col
-podStatus(:,7) = ones(size(podStatus,1),1);
+podStatus(:,1) = c_;                                                       % pod's row.
+podStatus(:,2) = d_;                                                       % pod's column.
+podStatus(:,7) = ones(size(podStatus,1),1);                                % are all Pods in it initial place ?? 0: false 1: true .
 
-% for i = 1:size(podStatus,1)
-%    podStatus(i,3)= randi(8,1,1);
-%    podStatus(i,4)= randi(8,1,1);
-%    podStatus(i,5)= randi(8,1,1);
-%    podStatus(i,6)= randi(8,1,1);
-% end    
-
-% disFlag = distributeMission2();
 %% CREATE MANUAL OPTIONS
 global manualFlag manualFrame;
 manualFlag = 0;
 manualFrame = [];
+
+%% OTHER GLOBAL DEFINITION
+global goalLine horLine verLine;
 
 % --- Executes on button press in addBtn.
 function addBtn_Callback(hObject, eventdata, handles)
@@ -275,6 +264,8 @@ function startBtn_Callback(hObject, eventdata, handles)
 % hObject    handle to startBtn (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+%% FIRST UPDATE
 global agvArray patchArray t_stamp numberofAGV T podStatus podShow emptyPod totalgood trackingFlag trackingFrame table trackingName ;
 global stopTime manualFrame manualFlag wsOrdLine;
 global lineOfWS1 lineOfWS2 lineOfWS3 lineOfWS4 lineOfWS5
