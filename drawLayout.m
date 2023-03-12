@@ -10,7 +10,7 @@ clear
 clc
 % Line (x : horizontal , y: vertical )
 % Properties for calculating
-l = 115000; w = 58000 ;                                                     % length and width of the Warehouse ( in mm ).
+l = 115000; w = 58200 ;                                                     % length and width of the Warehouse ( in mm ).
 wsLength = 4000 ;                                                           % length of the WorkStation ( in mm ).
 wsWidth = 2000;                                                             % width of the WorkStation ( in mm ).                                     
 aisWidth = 1800 ;                                                           % width of each Aisle.
@@ -59,14 +59,14 @@ line( [firstPointX lastAisleX], [lastAisleY lastAisleY],'color',[.7 .7 .7],'Line
 %% WORKSTATION CHARACTERISTICS
 % % from now, the workstation can be shortened by WS
 % % create the 2 Below WS
-% step = (105000)/3;                                                         % Distance between the WS (in mm). 
-% for i = 0:1
-%     % draw the workstation
-%     a = step*(i+1)+(wsLength+200)*i-400;
-%     str = '#AD82D9';
-%     convertcolor = sscanf(str(2:end),'%2x%2x%2x',[1 3])/255;
-%     rectangle('Position',[a 0 wsLength wsWidth],'FaceColor',convertcolor);
-%     
+step = (105000)/3;                                                         % Distance between the WS (in mm). 
+for i = 0:1
+    % draw the workstation
+    a = step*(i+1)+(wsLength+200)*i-400;
+    str = '#B2BEB5';
+    convertcolor = sscanf(str(2:end),'%2x%2x%2x',[1 3])/255;
+    rectangle('Position',[a 0 wsLength wsWidth],'FaceColor',convertcolor,'EdgeColor',convertcolor);
+     
 %     % draw to entrance to WS.
 %     line([ 4.5*aisWidth+20.5*podWidth+firstPointX+(5.5*aisWidth+29.5*podWidth)*i  4.5*aisWidth+20.5*podWidth+firstPointX+(5.5*aisWidth+29.5*podWidth)*i ],   [aisWidth/2 firstPointY],'color','b','LineWidth',line_weight);
 %     line([4.5*aisWidth+20.5*podWidth+firstPointX+(5.5*aisWidth+29.5*podWidth)*i  4.5*aisWidth+20.5*podWidth+firstPointX+(6*aisWidth+29*podWidth)*i+2*podWidth ],   [aisWidth/2 aisWidth/2],'color','b','LineWidth',line_weight);
@@ -75,15 +75,16 @@ line( [firstPointX lastAisleX], [lastAisleY lastAisleY],'color',[.7 .7 .7],'Line
 %     % get the "x,y" position of each Node of the entrance for WS ( anti-clock wise )
 %     nodeWS(i*2+1,:) = [4.5*aisWidth+20.5*podWidth+firstPointX+(5.5*aisWidth+29.5*podWidth)*i , aisWidth/2 ];
 %     nodeWS(i*2+2,:) = [4.5*aisWidth+20.5*podWidth+firstPointX+(6*aisWidth+29*podWidth)*i+2*podWidth  , aisWidth/2 ];
-% end
+end
 % 
-% % create the 3 Upper WS
-% step = (l-4500)/4;
-% for i = 0:2     
-%     a = step*(i+1)+wsLength;                                                   % Distance between the WS (in mm). 
-%     str2 = '#FDCF76';
-%     convertcolor2 = sscanf(str2(2:end),'%2x%2x%2x',[1 3])/255;
-%     rectangle('Position',[a w-wsWidth wsLength wsWidth],'FaceColor',convertcolor2);
+% create the 3 Upper WS
+step = (l-4500)/4;
+for i = 0:2     
+    a = step*(i+1)+wsLength-5000;                                                   % Distance between the WS (in mm). 
+    str2 = '#B2BEB5';
+    convertcolor2 = sscanf(str2(2:end),'%2x%2x%2x',[1 3])/255;
+    rectangle('Position',[a w-wsWidth wsLength wsWidth],'FaceColor',convertcolor2,'EdgeColor',convertcolor);
+    
 %     line( [firstPointX+3.5*aisWidth+17.5*podWidth+(4*aisWidth+19*podWidth)*i firstPointX+3.5*aisWidth+17.5*podWidth+(4*aisWidth+19*podWidth)*i],              [w-aisWidth/2 firstPointY+(aisWidth+2*podWidth)*numHorAis],'color','b','LineWidth',line_weight);
 %     line( [firstPointX+3.5*aisWidth+17.5*podWidth+(4*aisWidth+19*podWidth)*i firstPointX+3.5*aisWidth+17.5*podWidth+(4*aisWidth+19*podWidth)*i+2*podWidth],         [w-aisWidth/2 w-aisWidth/2],'color','b','LineWidth',line_weight);
 %     line( [firstPointX+3.5*aisWidth+17.5*podWidth+(4*aisWidth+19*podWidth)*i+2*podWidth , firstPointX+3.5*aisWidth+17.5*podWidth+(4*aisWidth+19*podWidth)*i+2*podWidth],  [w-aisWidth/2 firstPointY+(aisWidth+2*podWidth)*numHorAis],'color','b','LineWidth',line_weight);
@@ -91,7 +92,8 @@ line( [firstPointX lastAisleX], [lastAisleY lastAisleY],'color',[.7 .7 .7],'Line
 %     % get the "x,y" position of each Node of the entrance for WS ( clock wise) 
 %     nodeWS(i*2+1+4,:) = [firstPointX+3.5*aisWidth+17.5*podWidth+(4*aisWidth+19*podWidth)*i , w-aisWidth/2];
 %     nodeWS(i*2+2+4,:) = [firstPointX+3.5*aisWidth+17.5*podWidth+(4*aisWidth+19*podWidth)*i+2*podWidth , w-aisWidth/2 ];
-% end
+end
+
 
 %% WAREHOUSE INNER LAYOUT CREATION
 % create an Array to store 2 head Nodes of Vertical aisle
@@ -365,7 +367,14 @@ a = a(I);
 nodePosLookUp(end+1,:) = a;
 
 %% CHECKING RESULTS AFTHER SORTING
-viscircles(nodeStorageArray(nodePosLookUp(8,1),:),100,'Color','r');
+% viscircles(nodeStorageArray(nodePosLookUp(8,1),:),100,'Color','r');
 %% STEP TO CHANGE CURRENT LAYOUT INTO ANOTHER
+
+%% CREATE RECTANGLES FOR RETURN POSITION
+rectangle('Position',[nodeStorageArray(nodePosLookUp(1,28),1)-500 nodeStorageArray(nodePosLookUp(1,28),2)-500 1000 1000],'FaceColor','none','EdgeColor','r','LineWidth',1.5);
+rectangle('Position',[nodeStorageArray(nodePosLookUp(1,63),1)-500 nodeStorageArray(nodePosLookUp(1,63),2)-500 1000 1000],'FaceColor','none','EdgeColor','r','LineWidth',1.5);
+rectangle('Position',[nodeStorageArray(nodePosLookUp(42,21),1)-500 nodeStorageArray(nodePosLookUp(42,21),2)-500 1000 1000],'FaceColor','none','EdgeColor','r','LineWidth',1.5);
+rectangle('Position',[nodeStorageArray(nodePosLookUp(42,45),1)-500 nodeStorageArray(nodePosLookUp(42,45),2)-500 1000 1000],'FaceColor','none','EdgeColor','r','LineWidth',1.5);
+rectangle('Position',[nodeStorageArray(nodePosLookUp(42,70),1)-500 nodeStorageArray(nodePosLookUp(42,70),2)-500 1000 1000],'FaceColor','none','EdgeColor','r','LineWidth',1.5);
 
 end
