@@ -87,7 +87,7 @@ global h alp t_stamp T numberofAGV stopTime;
 len_agv=900 ;wid_agv=760; h = sqrt(len_agv^2+wid_agv^2)/2;                 % AGV length and width.
 alp = acosd(wid_agv/sqrt(wid_agv^2+len_agv^2));                            % alpha angle for AGV rotation.
 % Simulation time & number of AGV using
-numberofAGV = 8;                                                           % number of AGV on grid.
+numberofAGV = 2;                                                           % number of AGV on grid.
 t_stamp = 0.1;                                                             % time stamp for updating AGV.
 T = 0;                                                                     % current simulation time.
 stopTime = 900;                                                            % max simulation time.
@@ -116,22 +116,22 @@ global agvArray agvVel agvPosition temp;
 % AGV initial name and position
 agvArr(1,1) = agvClass(1,4,0,1);
 agvArr(2,1) = agvClass(1,8,0,2);
-agvArr(3,1) = agvClass(1,12,0,3);
-agvArr(4,1) = agvClass(1,16,0,4);
-agvArr(5,1) = agvClass(1,24,0,5);
-agvArr(6,1) = agvClass(1,28,0,6);
-agvArr(7,1) = agvClass(1,32,0,7);
-agvArr(8,1) = agvClass(1,36,0,8);
+% agvArr(3,1) = agvClass(1,12,0,3);
+% agvArr(4,1) = agvClass(1,16,0,4);
+% agvArr(5,1) = agvClass(1,24,0,5);
+% agvArr(6,1) = agvClass(1,28,0,6);
+% agvArr(7,1) = agvClass(1,32,0,7);
+% agvArr(8,1) = agvClass(1,36,0,8);
 
 % AGV color
 agvArr(1,1).colorface ='r';
 agvArr(2,1).colorface ='g';
-agvArr(3,1).colorface ='b';
-agvArr(4,1).colorface ='c';
-agvArr(5,1).colorface ='m';
-agvArr(6,1).colorface ='k';
-agvArr(7,1).colorface ='w';
-agvArr(8,1).colorface =[0.9290 0.6940 0.1250];
+% agvArray(3,1).colorface ='b';
+% agvArray(4,1).colorface ='c';
+% agvArray(5,1).colorface ='m';
+% agvArray(6,1).colorface ='k';
+% agvArray(7,1).colorface ='w';
+% agvArray(8,1).colorface =[0.9290 0.6940 0.1250];
 
 % Set global variable for other function usage
 agvArray = agvArr;  
@@ -187,7 +187,7 @@ global  podStatus wsStatus wsOrdLine podShow;                              % Arr
 podShow = zeros(numberofAGV,3);                                            % Patch for pod
 podStatus = zeros(size(rectCenter,1),8);                                   % x of pod ,y of pod,A,B,C,D, isAtStorage? ,isPick ?
 wsOrdLine = char(wsOrdLine);                                               % work station order line as [ABDDCACADBABD]
-wsStatus = [21 42 0 0;45 42 0 0;70 42 0 0;28 1 0 0; 63 1 0 0];            % position (col ,row) ,number of goods.
+wsStatus = [21 42 0 0;45 40 0 0;68 40 0 0;26 1 0 0; 61 1 0 0 ];            % position (col ,row) ,number of goods.
 
 %% COLLISION AVOIDANCE ALGORITHM SET-UP
 global time_window
