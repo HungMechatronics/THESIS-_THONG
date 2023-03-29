@@ -1,6 +1,6 @@
 function varargout = AGVsystem(varargin)
 % AGVSYSTEM MATLAB code for AGVsystem.fig
-%      AGVSYSTEM, by itself, creates a new AGVSYSTEM or raises the existing
+%      AGVSYSTEM, by itself, creates  a new AGVSYSTEM or raises the existing
 %      singleton*.
 %
 %      H = AGVSYSTEM returns the handle to a new AGVSYSTEM or the handle to
@@ -87,7 +87,7 @@ global h alp t_stamp T numberofAGV stopTime;
 len_agv=900 ;wid_agv=760; h = sqrt(len_agv^2+wid_agv^2)/2;                 % AGV length and width.
 alp = acosd(wid_agv/sqrt(wid_agv^2+len_agv^2));                            % alpha angle for AGV rotation.
 % Simulation time & number of AGV using
-numberofAGV = 8;                                                           % number of AGV on grid.
+numberofAGV = 5;                                                           % number of AGV on grid.
 t_stamp = 0.1;                                                             % time stamp for updating AGV.
 T = 0;                                                                     % current simulation time.
 stopTime = 900;                                                            % max simulation time.
@@ -119,9 +119,9 @@ agvArr(2,1) = agvClass(1,8,0,2);
 agvArr(3,1) = agvClass(1,12,0,3);
 agvArr(4,1) = agvClass(1,16,0,4);
 agvArr(5,1) = agvClass(1,24,0,5);
-agvArr(6,1) = agvClass(1,28,0,6);
-agvArr(7,1) = agvClass(1,32,0,7);
-agvArr(8,1) = agvClass(1,36,0,8);
+% agvArr(6,1) = agvClass(1,28,0,6);
+% agvArr(7,1) = agvClass(1,32,0,7);
+% agvArr(8,1) = agvClass(1,36,0,8);
 
 % AGV color
 agvArr(1,1).colorface ='r';
@@ -129,9 +129,9 @@ agvArr(2,1).colorface ='g';
 agvArr(3,1).colorface ='b';
 agvArr(4,1).colorface ='c';
 agvArr(5,1).colorface ='m';
-agvArr(6,1).colorface ='k';
-agvArr(7,1).colorface ='w';
-agvArr(8,1).colorface =[0.9290 0.6940 0.1250];
+% agvArr(6,1).colorface ='k';
+% agvArr(7,1).colorface ='w';
+% agvArr(8,1).colorface =[0.9290 0.6940 0.1250];
 
 % Set global variable for other function usage
 agvArray = agvArr;  

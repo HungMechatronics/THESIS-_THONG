@@ -7,7 +7,7 @@ function [distributeFlag] = distributeMission2()
     % Type of mission 
         % 0: have non-mission 
         % 1: pick mission. ( current position -> pod -> ws .)
-        % 2: repl. mission. ( current position -> pod -> ws .)
+        % 2: repl. mission. ( curr ent position -> pod -> ws .)
         % 3: storage mission. ( ws -> pod.)
                 
     % Check if AGV is currently available ?
@@ -24,7 +24,8 @@ function [distributeFlag] = distributeMission2()
         for i = 1:3
             % Limit number of AGV
             sumWS = 0;
-            for countAGV = 1:8
+            % Change AGV number
+            for countAGV = 1:numberofAGV
                 if agvArray(countAGV,1).wsName == i
                     sumWS = sumWS +1;
                 end
@@ -183,7 +184,7 @@ function [distributeFlag] = distributeMission2()
 %             if wsStatus(i,4)>2 || wsStatus(i,3)>2 
 % Limit number of AGV
             sumWS = 0;
-            for countAGV = 1:8
+            for countAGV = 1:numberofAGV
                 if agvArray(countAGV,1).wsName == i
                     sumWS = sumWS +1;
                 end
@@ -306,7 +307,7 @@ function [distributeFlag] = distributeMission2()
 %             if wsStatus(i,4)>2 || wsStatus(i,3)>2 
 % Limit number of AGV
             sumWS = 0;
-            for countAGV = 1:8
+            for countAGV = 1:numberofAGV
                 if agvArray(countAGV,1).wsName == i
                     sumWS = sumWS +1;
                 end
@@ -427,7 +428,7 @@ function [distributeFlag] = distributeMission2()
 %             if(wsStatus(i,4)>2) || wsStatus(i,3)>2
 % Limit number of AGV
             sumWS = 0;
-            for countAGV = 1:8
+            for countAGV = 1:numberofAGV
                 if agvArray(countAGV,1).wsName == i
                     sumWS = sumWS +1;
                 end

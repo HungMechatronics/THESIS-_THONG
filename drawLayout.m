@@ -26,7 +26,6 @@ lastAisleX = secondAisleX + numVerAis*(aisWidth+5*podWidth) + aisWidth;
 secondAisleY = firstPointY + aisWidth;
 lastAisleY =  secondAisleY + (aisWidth+2*podWidth)*numHorAis + aisWidth; 
 
-
 % Properties for drawing
 axis([-1000 l+1000 -1000 w+1000]);                                          % length and width of the display window
 line_weight = 0.5;                                                          % drawing line weight
@@ -54,7 +53,6 @@ line( [secondAisleX secondAisleX], [firstPointY lastAisleY],'color',[.7 .7 .7],'
 line( [firstPointX lastAisleX],[secondAisleY secondAisleY],'color',[.7 .7 .7],'LineWidth',line_weight); % 2nd bot horizontal
 line( [lastAisleX lastAisleX], [firstPointY lastAisleY],'color',[.7 .7 .7],'LineWidth',line_weight); % last right vertical
 line( [firstPointX lastAisleX], [lastAisleY lastAisleY],'color',[.7 .7 .7],'LineWidth',line_weight); % 2nd left vertical
-
 
 %% WORKSTATION CHARACTERISTICS
 % % from now, the workstation can be shortened by WS

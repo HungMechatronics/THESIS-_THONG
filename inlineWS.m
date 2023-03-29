@@ -12,7 +12,7 @@ function [fPoint,midpoint,lastpoint,agvOutput] = inlineWS(wsName,agvName)
                 agvArray(agvName,1).direc = 'NES';
                 agvArray(agvName,1).goal = [ nodeArray(stor(40,22),:);nodeArray(end-5,:);nodeArray(end-4,:);nodeArray(stor(40,24),:)]; 
                 % extract the output
-                agvArray(agvName,1).goalX = 24;
+                agvArray(agvName,1).goalX = 24;  
                 agvArray(agvName,1).goalY = 40; 
                 newgoal = [ [22,40]; nodeArray(end-5,:) ;nodeArray(end-4,:);[24,40] ];
                 

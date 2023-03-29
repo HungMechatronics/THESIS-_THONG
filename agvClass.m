@@ -276,20 +276,25 @@ classdef agvClass
 %%%%%%% AGV IS CURRENT IN THE MISSION
     if obj.currentMission ~= 0                                             % AGV is doing a TASK.
        % CHECK IF AGV IS IN THE LOAD-OUT POSITION -> WAITING
-       if obj.waitingFlag == 1
-            if Mission == 3 && curRoad == 3 
+        if obj.waitingFlag == 1
+%             if Mission == 3 && curRoad == 3 
+            if Mission == 3 && curRoad == 1 
                 if obj.wsName == 1 || obj.wsName == 2 || obj.wsName == 3
-                obj.waitingTime = 15 + (obj.goodHolding-1)*8; 
+%                 obj.waitingTime = 1 + (obj.goodHolding-1)*8; 
+                obj.waitingTime = 2; 
                 else
-                obj.waitingTime = 20 + (obj.goodHolding-1)*8; 
+%                 obj.waitingTime = 1 + (obj.goodHolding-1)*8; 
+                obj.waitingTime = 2; 
                 end
                 obj.waitingFlag = 0;
             end
-       end
+        end
 
+%% IN CASE AGV IS NOT IN A WAITING SITUATION
         if obj.waitingTime == 0                                            % Not at waiting positions.
 %%%%%%%% AGV LINEAR MOVEMENT - UPDATE AGV EACH 0.1S BASED ON THE DIRECTIONS [N,W,S,E]
             if rota(curRoad,1) ~= 1                                        % AGV not in the rotation place.
+              if Mission ~=3   % only check the goal 
                 if( direct(curRoad) == 'N')
                     centY = centY + v*t_stamp;
                     if centY >= goal_(curRoad+1,2)+20
@@ -325,15 +330,15 @@ classdef agvClass
                         obj.totalDistance = obj.totalDistance + obj.distanceCost(curRoad);
                     end        
                 end
+             end
                 
-
 %%%%%%%% MOVE TO ANOTHER NODE FLAG
                 if nextNodeFlag == 1
                    obj.currentRoad = curRoad+1;
                 end
               
 %%%%%%%% DISPLAY AGV WITH OR WITHOUT PODS
-           % AGV with out PODS.
+           % display AGV with out PODS.
            if Mission == 1 || Mission == 0                                 
                 
                 x = [ (centX+h1*cosd(alp1+beta1));centX+h1*cosd(180-(alp1+beta1));
@@ -344,7 +349,7 @@ classdef agvClass
                 vertex = [x(1,1) y(1,1);x(2,1) y(2,1);x(3,1) y(3,1);x(4,1) y(4,1)];               
                 face = [1 2 3 4];
                 set(k,'faces',face,'vertices',vertex,'FaceColor',obj.colorface); 
-           % AGV with PODS.  
+           % display AGV with PODS.  
            else
                 h2 = sqrt(1000^2+1000^2)/2;
                 x = [ (centX+h2*cosd(45));centX+h2*cosd(180-(45));
@@ -374,11 +379,11 @@ classdef agvClass
             end
 
 %%%%%%%%% UPDATE NEW COORDINATE (x,y in mm) 
-        obj.coordinateX = centX;
-        obj.coordinateY= centY;
-        obj.beta =beta1;
+        obj.coordinateX     =centX;
+        obj.coordinateY     =centY;
+        obj.beta            =beta1;
         
-%%%%%%%%% HANDLING THE TASK WHEN AGV GET TO THE GOAL
+%% HANDLING THE TASK WHEN AGV GET TO THE GOAL (MOST IMPORTANT PART)
         goalCol = obj.goalX;                                               % extract out the goal column.                  
         goalRow = obj.goalY;                                               % extract out the goal row.
         if(centX == goal_(end,1) && centY == goal_(end,2)) 
@@ -392,6 +397,7 @@ classdef agvClass
                 goalline = obj.goalLine;
                 goalline.Visible = 'off';
                 obj.currentRoad = 1;
+                
         % AUTOMATION CASE: 
             else
 %%%%%%%% IF : AGV find the PODS position to take the goods - as first mission.
@@ -402,19 +408,18 @@ classdef agvClass
                 a = find(podStatus(:,1) == goalPod(1,2) & podStatus(:,2) == goalPod(1,1),1);
                                                                            % find the pod match.
                 podStatus(a,7) = 0;                                        % status of the pod ( is taken ? )
+            % TIME WINDOW RESET STORAGE.
+                deleteTW = find(time_window(:,5) == double(obj.agvName));
+                time_window(deleteTW,:) = [];
+                
+            % SET-UP FOR NEXT ROAD 
                 obj.currentMission = 2;                                    % switch to next mission.
                 obj.goalX = wsX;                                           % set the next goal to workstation.
                 obj.goalY = wsY;                                           % set the next goal to workstation
+                obj.findPathFlag = 1;                                      % set the flag for getCurrentPath() function.
+                obj.waitingTime = 3;                                       % wait for 3 seconds to lift the pods.
                 
-            	% TIME WINDOW
-                deleteTW = find(time_window(:,5) == double(obj.agvName));
-                time_window(deleteTW,:) = [];
-             
-                % 
-                obj.findPathFlag = 1;
-                obj.waitingTime = 3;
-                
-                % Visible pod has been taken 
+            % VISIBLE THE POD THAT HAD BEEN TAKEN.
                 setpod = find(podShow(:,3)==0,1);
                 podShow(setpod,3) = 1;
                 podShow(setpod,1) = centX; podShow(setpod,2) = centY;
@@ -426,129 +431,156 @@ classdef agvClass
                 vertex = [x(1,1) y(1,1);x(2,1) y(2,1);x(3,1) y(3,1);x(4,1) y(4,1)];
                 face = [1 2 3 4];
                 set(emptyPod(setpod,1),'faces',face,'vertices',vertex,'FaceColor',[0.75 0.75 0.75]); 
-                emptyPod(setpod,1).Visible = 'on';
-            
-%%%%%%%% IF : AGV with Pods already arrived in the WORKSTATION.
+                emptyPod(setpod,1).Visible = 'on';                         % set another rectangle up on the pod.
+
+%% WAITING WHEN THE AGVS WERE A LINE
+%%%%%%%% IF : AGV with Pods already arrived at the WORKSTATION.
             elseif Mission == 2  
-                % Pod arrive at workstation
-%                 deleteTW = find(time_window(:,5) == double(obj.agvName));
-%                 time_window(deleteTW,:) = [];
-                [fpoint_,midpoint_,lastpoint_,obj] = inlineWS(obj.wsName,obj.agvName);                
+%             %%%% TIME WINDOW
+% %                 deleteTW = find(time_window(:,5) == double(obj.agvName));
+% %                 time_window(deleteTW,:) = [];
+% 
+%                 [fpoint_,midpoint_,lastpoint_,obj] = inlineWS(obj.wsName,obj.agvName); 
+%                 
                 obj.currentMission = 3;  
                 timeDelay = 0;
-                wsStatus(obj.wsName,4) = wsStatus(obj.wsName,4) -1 ;
-                lineOfws = [];
+                
+      %%%% CHECK AGAIN THE ALGORITHM TO GET NEW GOAL !!
+                % new damn code
+                obj.distanceCost = [0 0 0];
+                obj.waitingFlag = 1;
+                obj.totalDistance =  obj.totalDistance + 5;
+                
                 switch obj.wsName
                     case 1
-                            lineOfws = lineOfWS1;
+                            agvArray(obj.agvName,1).goal = nodeArray(stor(42,21),:); 
                     case 2
-                            lineOfws = lineOfWS2;
+                            agvArray(obj.agvName,1).goal = nodeArray(stor(42,45),:);
                     case 3
-                            lineOfws = lineOfWS3;
+                            agvArray(obj.agvName,1).goal = nodeArray(stor(42,70),:);
                     case 4
-                            lineOfws = lineOfWS4;
+                            agvArray(obj.agvName,1).goal = nodeArray(stor(1,28),:);
                     case 5
-                            lineOfws = lineOfWS5;
-                end
-%                 disp(lineOfws);
-                if (wsStatus(obj.wsName,3) >= 2) || size(lineOfws,2) >= 2
-                    % Dang co 2 AGV dang lam trong WS
-                    findPoint = find( time_window(:,1) == lastpoint_(1,2) & time_window(:,2) == lastpoint_(1,1) & time_window(:,3) == lastpoint_(1,2) & time_window(:,4) == lastpoint_(1,1),1);
-                    fAGV = time_window(findPoint,5);
-                    if isempty(fAGV) ~=1
-                        timeDelay = agvArray(fAGV,1).waitingTime;
-                    end
-                    % Chua duoc vao
-                    newWin = [fpoint_(1,2),fpoint_(1,1),fpoint_(1,2),fpoint_(1,1),obj.agvName,T,T+timeDelay,fpoint_(1,2),fpoint_(1,1),obj.currentMission];
-                    newWin_2 = [lastpoint_(1,2),lastpoint_(1,1),lastpoint_(1,2),lastpoint_(1,1),obj.agvName,T,T+timeDelay+35,lastpoint_(1,2),lastpoint_(1,1),obj.currentMission];
-                    
-                    % Cho agv thu 1 nhat di chuyen
-                    obj.waitingTime = agvArray(fAGV,1).waitingTime;
-                    time_window = cat(1,time_window,newWin,newWin_2);
-
-                    % Cho agv thu 2 lay do
-                    obj.timeSlowDownIL = 15; 
-                    wsStatus(obj.wsName,3) = wsStatus(obj.wsName,3)+1;  
-                    
-                    % 24/05
-                    obj.waitingTime = agvArray(lineOfws(1),1).waitingTime;
-                    obj.timeSlowDownIL = 15 + (agvArray(lineOfws(2),1).goodHolding -1)*8;
-                    
-                    % Unchanged code
-                    obj.inlineFlag = 1;
-                    obj.slowInlineX = midpoint_(1,1);
-                    obj.slowInlineY = midpoint_(1,2);
-                    
-%                 elseif (wsStatus(obj.wsName,3) == 1) || size(lineOfws,2) == 1
-                elseif size(lineOfws,2) == 1
-                    % Dang co 1 AGV trong WS
-                    obj.inlineFlag = 1;
-                    obj.slowInlineX = midpoint_(1,1);
-                    obj.slowInlineY = midpoint_(1,2);
-                    findPoint = find( time_window(:,1) == lastpoint_(1,2) & time_window(:,2) == lastpoint_(1,1) & time_window(:,3) == lastpoint_(1,2) & time_window(:,4) == lastpoint_(1,1),1);
-                    fAGV = time_window(findPoint,5);  
-                    if isempty(fAGV) ~=1
-                        timeDelay = agvArray(fAGV,1).waitingTime;
-                    end
-                    obj.timeSlowDownIL = timeDelay; 
-                    newWin = [fpoint_(1,2),fpoint_(1,1),fpoint_(1,2),fpoint_(1,1),obj.agvName,T,T+3,fpoint_(1,2),fpoint_(1,1),obj.currentMission];
-                    newWin_2 = [lastpoint_(1,2),lastpoint_(1,1),lastpoint_(1,2),lastpoint_(1,1),obj.agvName,T,T+timeDelay+20,lastpoint_(1,2),lastpoint_(1,1),obj.currentMission];                                      
-                    time_window = cat(1,time_window,newWin,newWin_2);
-                    wsStatus(obj.wsName,3) = wsStatus(obj.wsName,3)+1; 
-                    
-                    % Neu vao luc AGV 1 chua lay do                    
-                    if agvArray(lineOfws(1),1).waitingTime >0
-                        obj.timeSlowDownIL = agvArray(lineOfws(1),1).waitingTime;
-                    else
-                        if agvArray(lineOfws(1),1).wsName == 1 || agvArray(lineOfws(1),1).wsName == 2 || agvArray(lineOfws(1),1).wsName == 3
-                            obj.timeSlowDownIL = 15 + (agvArray(lineOfws(1),1).goodHolding -1)*8 + 1.5;   
-                        else
-                            obj.timeSlowDownIL = 20 + (agvArray(lineOfws(1),1).goodHolding -1)*8 + 1.5;    
-                        end
-                    end
-                    
-                else
-                    wsStatus(obj.wsName,3) = wsStatus(obj.wsName,3)+1;
-                    newWin = [fpoint_(1,2),fpoint_(1,1),fpoint_(1,2),fpoint_(1,1),obj.agvName,T,T+3,fpoint_(1,2),fpoint_(1,1),obj.currentMission];
-                    newWin_2 = [lastpoint_(1,2),lastpoint_(1,1),lastpoint_(1,2),lastpoint_(1,1),obj.agvName,T,T+30,lastpoint_(1,2),lastpoint_(1,1),obj.currentMission];
-                    time_window = cat(1,time_window,newWin,newWin_2);    
-                    
-                end
-                % Add AGV to in line
-                switch obj.wsName
-                    case 1
-                        if size(lineOfWS1) >=1
-                            lineOfWS1 = cat(2,lineOfWS1,obj.agvName);
-                        else
-                            lineOfWS1 = obj.agvName;
-                        end
-                    case 2
-                        if size(lineOfWS2) >=1
-                            lineOfWS2 = cat(2,lineOfWS2,obj.agvName);
-                        else
-                            lineOfWS2 = obj.agvName;
-                        end
-                    case 3
-                        if size(lineOfWS3) >=1
-                            lineOfWS3 = cat(2,lineOfWS3,obj.agvName);
-                        else
-                            lineOfWS3 = obj.agvName;
-                        end
-                    case 4
-                        if size(lineOfWS4) >=1
-                            lineOfWS4 = cat(2,lineOfWS4,obj.agvName);
-                        else
-                            lineOfWS4 = obj.agvName;
-                        end
-                    case 5
-                        if size(lineOfWS5) >=1
-                            lineOfWS5 = cat(2,lineOfWS5,obj.agvName);
-                        else
-                            lineOfWS5 = obj.agvName;
-                        end
+                            agvArray(obj.agvName,1).goal = nodeArray(stor(1,63),:);
                 end
                 
-%%%%%%%% IF : AGV with Pods already arrived in the WORKSTATION.
+
+%                 wsStatus(obj.wsName,4) = wsStatus(obj.wsName,4) -1 ;
+%                 lineOfws = [];
+%         % UPDATE AGV is which line for waiting ?
+%                 switch obj.wsName
+%                     case 1
+%                             lineOfws = lineOfWS1;
+%                     case 2
+%                             lineOfws = lineOfWS2;
+%                     case 3
+%                             lineOfws = lineOfWS3;
+%                     case 4
+%                             lineOfws = lineOfWS4;
+%                     case 5
+%                             lineOfws = lineOfWS5;
+%                 end
+
+%                 disp(lineOfws);
+%                 if (wsStatus(obj.wsName,3) >= 2) || size(lineOfws,2) >= 2
+%                     % Dang co 2 AGV dang lam trong WS
+%                     findPoint = find( time_window(:,1) == lastpoint_(1,2) & time_window(:,2) == lastpoint_(1,1) & time_window(:,3) == lastpoint_(1,2) & time_window(:,4) == lastpoint_(1,1),1);
+%                     fAGV = time_window(findPoint,5);
+%                     if isempty(fAGV) ~=1
+%                         timeDelay = agvArray(fAGV,1).waitingTime;
+%                     end
+%                     % Chua duoc vao
+%                     newWin = [fpoint_(1,2),fpoint_(1,1),fpoint_(1,2),fpoint_(1,1),obj.agvName,T,T+timeDelay,fpoint_(1,2),fpoint_(1,1),obj.currentMission];
+%                     newWin_2 = [lastpoint_(1,2),lastpoint_(1,1),lastpoint_(1,2),lastpoint_(1,1),obj.agvName,T,T+timeDelay+35,lastpoint_(1,2),lastpoint_(1,1),obj.currentMission];
+%                     
+%                     % Cho agv thu 1 nhat di chuyen
+%                     obj.waitingTime = agvArray(fAGV,1).waitingTime;
+%                     time_window = cat(1,time_window,newWin,newWin_2);
+% 
+%                     % Cho agv thu 2 lay do
+%                     obj.timeSlowDownIL = 15; 
+%                     wsStatus(obj.wsName,3) = wsStatus(obj.wsName,3)+1;  
+%                     
+%                     % 24/05
+%                     obj.waitingTime = agvArray(lineOfws(1),1).waitingTime;
+%                     obj.timeSlowDownIL = 15 + (agvArray(lineOfws(2),1).goodHolding -1)*8;
+%                     
+%                     % Unchanged code
+%                     obj.inlineFlag = 1;
+%                     obj.slowInlineX = midpoint_(1,1);
+%                     obj.slowInlineY = midpoint_(1,2);
+%                     
+% %                 elseif (wsStatus(obj.wsName,3) == 1) || size(lineOfws,2) == 1
+%                 elseif size(lineOfws,2) == 1
+%                     % Dang co 1 AGV trong WS
+%                     obj.inlineFlag = 1;
+%                     obj.slowInlineX = midpoint_(1,1);
+%                     obj.slowInlineY = midpoint_(1,2);
+%                     findPoint = find( time_window(:,1) == lastpoint_(1,2) & time_window(:,2) == lastpoint_(1,1) & time_window(:,3) == lastpoint_(1,2) & time_window(:,4) == lastpoint_(1,1),1);
+%                     fAGV = time_window(findPoint,5);  
+%                     if isempty(fAGV) ~=1
+%                         timeDelay = agvArray(fAGV,1).waitingTime;
+%                     end
+%                     obj.timeSlowDownIL = timeDelay; 
+%                     newWin = [fpoint_(1,2),fpoint_(1,1),fpoint_(1,2),fpoint_(1,1),obj.agvName,T,T+3,fpoint_(1,2),fpoint_(1,1),obj.currentMission];
+%                     newWin_2 = [lastpoint_(1,2),lastpoint_(1,1),lastpoint_(1,2),lastpoint_(1,1),obj.agvName,T,T+timeDelay+20,lastpoint_(1,2),lastpoint_(1,1),obj.currentMission];                                      
+%                     time_window = cat(1,time_window,newWin,newWin_2);
+%                     wsStatus(obj.wsName,3) = wsStatus(obj.wsName,3)+1; 
+%                     
+%                     % Neu vao luc AGV 1 chua lay do                    
+%                     if agvArray(lineOfws(1),1).waitingTime >0
+%                         obj.timeSlowDownIL = agvArray(lineOfws(1),1).waitingTime;
+%                     else
+%                         if agvArray(lineOfws(1),1).wsName == 1 || agvArray(lineOfws(1),1).wsName == 2 || agvArray(lineOfws(1),1).wsName == 3
+%                             obj.timeSlowDownIL = 15 + (agvArray(lineOfws(1),1).goodHolding -1)*8 + 1.5;   
+%                         else
+%                             obj.timeSlowDownIL = 20 + (agvArray(lineOfws(1),1).goodHolding -1)*8 + 1.5;    
+%                         end
+%                     end
+%                     
+%                 else
+%                     wsStatus(obj.wsName,3) = wsStatus(obj.wsName,3)+1;
+%                     newWin = [fpoint_(1,2),fpoint_(1,1),fpoint_(1,2),fpoint_(1,1),obj.agvName,T,T+3,fpoint_(1,2),fpoint_(1,1),obj.currentMission];
+%                     newWin_2 = [lastpoint_(1,2),lastpoint_(1,1),lastpoint_(1,2),lastpoint_(1,1),obj.agvName,T,T+30,lastpoint_(1,2),lastpoint_(1,1),obj.currentMission];
+%                     time_window = cat(1,time_window,newWin,newWin_2);    
+%                     
+%                 end
+% 
+%                 % Add AGV to in line
+%                 switch obj.wsName
+%                     case 1
+%                         if size(lineOfWS1) >=1
+%                             lineOfWS1 = cat(2,lineOfWS1,obj.agvName);
+%                         else
+%                             lineOfWS1 = obj.agvName;
+%                         end
+%                     case 2
+%                         if size(lineOfWS2) >=1
+%                             lineOfWS2 = cat(2,lineOfWS2,obj.agvName);
+%                         else
+%                             lineOfWS2 = obj.agvName;
+%                         end
+%                     case 3
+%                         if size(lineOfWS3) >=1
+%                             lineOfWS3 = cat(2,lineOfWS3,obj.agvName);
+%                         else
+%                             lineOfWS3 = obj.agvName;
+%                         end
+%                     case 4
+%                         if size(lineOfWS4) >=1
+%                             lineOfWS4 = cat(2,lineOfWS4,obj.agvName);
+%                         else
+%                             lineOfWS4 = obj.agvName;
+%                         end
+%                     case 5
+%                         if size(lineOfWS5) >=1
+%                             lineOfWS5 = cat(2,lineOfWS5,obj.agvName);
+%                         else
+%                             lineOfWS5 = obj.agvName;
+%                         end
+%                 end
+
+%%%%%%%% IF : AGV with Pods 
             elseif Mission == 3                
                 obj.currentMission = 4;
                 wsStatus(obj.wsName,3) = wsStatus(obj.wsName,3)-1;
@@ -578,18 +610,18 @@ classdef agvClass
                 a = find(podStatus(:,1) == goalPod(1,2) & podStatus(:,2) == goalPod(1,1),1);
                 podStatus(a,7) = 1;  
                 
-                switch obj.wsName
-                    case 1
-                            lineOfWS1(1) = [];
-                    case 2
-                            lineOfWS2(1) = [];
-                    case 3
-                            lineOfWS3(1) = [];
-                    case 4
-                            lineOfWS4(1) = [];
-                    case 5
-                            lineOfWS5(1) = [];
-                end
+%                 switch obj.wsName
+%                     case 1
+%                             lineOfWS1(1) = [];
+%                     case 2
+%                             lineOfWS2(1) = [];
+%                     case 3
+%                             lineOfWS3(1) = [];
+%                     case 4
+%                             lineOfWS4(1) = [];
+%                     case 5
+%                             lineOfWS5(1) = [];
+%                 end
                 tempArray = wsOrdLine(obj.wsName,:);
                 tempArray(obj.deleteOrdLine) = '_';
                 wsOrdLine(obj.wsName,:) = tempArray; 
@@ -626,6 +658,8 @@ classdef agvClass
         end
         obj.positionX = goalCol;
         obj.positionY = goalRow;
+        
+%% IN CASE AGV IS IN A WAITING SITUATION
         else        
             obj.waitingTime = obj.waitingTime - t_stamp;
             if(obj.waitingTime <=0 )
