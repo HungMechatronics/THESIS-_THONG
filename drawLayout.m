@@ -172,7 +172,7 @@ for count_y = 1:numHorAis                                                   % JU
 %    
     for count_x = 1:numVerAis                                              % JUMP STEP IN VERTICAL.
         for i = 1:2                                                        % set the left-bottom Pod ( of each Batch ) to 1.
-            for j = 1:5                                                    % count the Pod from 1->5 , 6->10.
+            for j = 1:5                                              % count the Pod from 1->5 , 6->10.
                 
             % CALCULATING ALGORITHM:
                 % get coordinate of the left-bottom corner of each Pod

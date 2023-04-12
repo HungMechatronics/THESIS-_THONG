@@ -246,7 +246,7 @@ classdef agvClass
        alp1 = obj.alp;
        h1 = obj.h;
        k = agvPatch;
-       v = obj.velocity;
+       v = obj.velocity; 
        nextNodeFlag = 0;
        Mission = obj.currentMission;
        wsX = obj.wsStaReturnX;

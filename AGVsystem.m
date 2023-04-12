@@ -8,7 +8,7 @@ function varargout = AGVsystem(varargin)
 %
 %      AGVSYSTEM('CALLBACK',hObject,eventData,handles,...) calls the local
 %      function named CALLBACK in AGVSYSTEM.M with the given input arguments.
-%
+% 
 %      AGVSYSTEM('Property','Value',...) creates a new AGVSYSTEM or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before AGVsystem_OpeningFcn gets called.  An
@@ -118,7 +118,7 @@ agvArr(1,1) = agvClass(1,4,0,1);
 agvArr(2,1) = agvClass(1,8,0,2);
 agvArr(3,1) = agvClass(1,12,0,3);
 agvArr(4,1) = agvClass(1,16,0,4);
-agvArr(5,1) = agvClass(1,24,0,5);
+agvArr(5,1) = agvClass (1,24,0,5);
 % agvArr(6,1) = agvClass(1,28,0,6);
 % agvArr(7,1) = agvClass(1,32,0,7);
 % agvArr(8,1) = agvClass(1,36,0,8);
@@ -160,7 +160,8 @@ lineOfWS5 = [];
 
 %% FIRST DISPLAY OF AGV ON GRID
 for i = 1:size(agvArray,1)
-    beta1 = 0;
+    beta1 = agvArray(i,1).beta;
+%     beta1 = 0;
     centX = nodeArray(stor(agvArray(i,1).positionY,agvArray(i,1).positionX),1);
     centY = nodeArray(stor(agvArray(i,1).positionY,agvArray(i,1).positionX),2);
     x = [ (centX+h*cosd(alp+beta1));centX+h*cosd(180-(alp+beta1));
@@ -191,7 +192,9 @@ wsStatus = [21 42 0 0;45 42 0 0;70 42 0 0;28 1 0 0; 63 1 0 0];            % posi
 
 %% COLLISION AVOIDANCE ALGORITHM SET-UP
 global time_window
-time_window = [ 0,0,0,0,0,0,0,0,0,0];% start_node , end_node , agvName , time_in , time_out , next node , previous node
+% [ start_node , end_node , agvName , time_in , time_out , next node ,
+% previous node ]
+time_window = [ 0,0,0,0,0,0,0,0,0,0];% start_node , end_node , agvName , time_in , time_out , next node , status
 
 %% GENERATE THE ORDER OF PODS
 operators = [65,68]; % ASCII character A B C D
