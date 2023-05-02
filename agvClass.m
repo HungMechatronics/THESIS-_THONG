@@ -32,6 +32,7 @@ classdef agvClass
         currentMission = 0;
         currentRoad  = 1 ; % The road on total journey
         waitingFlag = 0;
+        waiting_at_WS_flag = 0;
         inlineFlag % remove in the future
         tempIndex = 0;
         
@@ -74,16 +75,19 @@ classdef agvClass
     methods
 %% CONSTRUCT METHOD
         function obj = agvClass(positionX,positionY,beta,agvName)
+            global nodeArr stor;
             % input start node & angle
             obj.positionX = positionX; % col
             obj.positionY = positionY; % row
+            obj.coordinateX = nodeArr(stor(positionY,positionX),1);
+            obj.coordinateY = nodeArr(stor(positionY,positionX),2);
             obj.beta = beta;
             obj.agvName = agvName;
         end
 %% GET CURRENT PATH USING A* ALGORITHM       
         function obj = getcurrentPath(obj,goalX,goalY,fig)
         global stor nodeArray ;
-        global podStatic podStatus podShow emptyPod
+        global podStatic podStatus podShow emptyPod agvStatic ;
         lastDir = obj.direc(end);            
         x = obj.positionX;
         y = obj.positionY;
@@ -219,7 +223,8 @@ classdef agvClass
             obj.goal = tempgoal; 
             obj.goalX = x1;
             obj.goalY = y1;
-            obj.findPathFlag = 0; 
+            obj.findPathFlag = 0;
+            agvStatic(obj.positionY,obj.positionX) = 0;                    % AGV moving -> remove the block on MAP.
         else
             obj.waitingTime = 5;
             obj.findPathFlag = 1;
@@ -228,12 +233,13 @@ classdef agvClass
     end
 %% UPDATE AGV        
     function obj = updateAGV(obj,t_stamp,agvPatch,fig)
-%%%%%% IF THERE IS NOT PATH FINDING
+    %% IF THERE IS NOT PATH FINDING
        if obj.findPathFlag ==1  
             obj = getcurrentPath(obj,obj.goalX ,obj.goalY,fig);                    
-       end   
+       end    
 
-       global podStatic podStatus nodeArray stor time_window wsStatus T agvArray emptyPod podShow manualFrame totalgood;
+    %% GET SOME VARIABLES
+       global podStatic podStatus nodeArray stor time_window wsStatus T agvArray emptyPod podShow manualFrame totalgood agvStatic;
        global lineOfWS1 lineOfWS2 lineOfWS3 lineOfWS4 lineOfWS5 wsOrdLine
        centX = obj.coordinateX;
        centY = obj.coordinateY;
@@ -252,45 +258,48 @@ classdef agvClass
        wsX = obj.wsStaReturnX;
        wsY = obj.wsStaReturnY;
                
-%%%%%% IF AGV CURRENT IN THE LINE
-      if obj.inlineFlag == 1
-          if( goal_(curRoad,1)==obj.slowInlineX && goal_(curRoad,2)==obj.slowInlineY )
-              obj.waitingTime = obj.timeSlowDownIL;
-              obj.inlineFlag = 0;
-              obj.slowInlineX = [];
-              obj.slowInlineY = [];
-          end
-      end
-               
-               
-%%%%%%% FIND SLOW DOWN POSITION
+%% IF AGV CURRENT IN THE LINE ( WILL BE REMOVED )
+%       if obj.inlineFlag == 1
+%           if( goal_(curRoad,1)==obj.slowInlineX && goal_(curRoad,2)==obj.slowInlineY )
+%               obj.waitingTime = obj.timeSlowDownIL;
+%               obj.inlineFlag = 0;
+%               obj.slowInlineX = [];
+%               obj.slowInlineY = [];
+%           end
+%       end
+                            
+%% FIND SLOW DOWN POSITION
+    % If slow down position is in next goal -> set waiting time in AGV.
       if obj.waitingTime == 0
         if (~isempty(obj.timeSlowDown) == 1 && ~isempty(obj.slowDownY) == 1)
-           if( goal_(curRoad+1,1)==nodeArray(stor(obj.slowDownY(end,1),obj.slowDownX(end,1)),1) && goal_(curRoad+1,2)==nodeArray(stor(obj.slowDownY(end,1),obj.slowDownX(end,1)),2))
+           if( goal_(curRoad+1,1)==nodeArray(stor(obj.slowDownY(end,1),obj.slowDownX(end,1)),1) &&...
+               goal_(curRoad+1,2)==nodeArray(stor(obj.slowDownY(end,1),obj.slowDownX(end,1)),2))
                obj.waitingTime = obj.timeSlowDown(end,1);
-               obj.waitingFlag = 1;
+%                obj.waitingFlag = 1;
            end
         end
       end
 
-%%%%%%% AGV IS CURRENT IN THE MISSION
+%% AGV IS CURRENT IN THE MISSION
     if obj.currentMission ~= 0                                             % AGV is doing a TASK.
-       % CHECK IF AGV IS IN THE LOAD-OUT POSITION -> WAITING
-        if obj.waitingFlag == 1
+   % CHECK IF AGV IS IN THE LOAD - OUT POSION
+   % YES: Wait for 4 seconds.
+   % NO:  Continue doing.
+        if obj.waiting_at_WS_flag == 1
 %             if Mission == 3 && curRoad == 3 
             if Mission == 3 && curRoad == 1 
                 if obj.wsName == 1 || obj.wsName == 2 || obj.wsName == 3
 %                 obj.waitingTime = 1 + (obj.goodHolding-1)*8; 
-                obj.waitingTime = 2; 
+                obj.waitingTime = 4; 
                 else
 %                 obj.waitingTime = 1 + (obj.goodHolding-1)*8; 
-                obj.waitingTime = 2; 
+                obj.waitingTime = 4; 
                 end
-                obj.waitingFlag = 0;
+                obj.waiting_at_WS_flag = 0;
             end
         end
 
-%% IN CASE AGV IS NOT IN A WAITING SITUATION
+%% CALCULATING FUNCTION: IN CASE AGV IS NOT IN A WAITING SITUATION
         if obj.waitingTime == 0                                            % Not at waiting positions.
 %%%%%%%% AGV LINEAR MOVEMENT - UPDATE AGV EACH 0.1S BASED ON THE DIRECTIONS [N,W,S,E]
             if rota(curRoad,1) ~= 1                                        % AGV not in the rotation place.
@@ -332,15 +341,14 @@ classdef agvClass
                 end
              end
                 
-%%%%%%%% MOVE TO ANOTHER NODE FLAG
-                if nextNodeFlag == 1
-                   obj.currentRoad = curRoad+1;
-                end
+%%%%%%%% UPDATE CURRENT ROAD FOR AGV.
+            if nextNodeFlag == 1
+               obj.currentRoad = curRoad+1;
+            end
               
-%%%%%%%% DISPLAY AGV WITH OR WITHOUT PODS
-           % display AGV with out PODS.
+%% DISPLAY FUNCTION: DISPLAY AGV WITH OR WITHOUT PODS
+   % Display AGV with out PODS.
            if Mission == 1 || Mission == 0                                 
-                
                 x = [ (centX+h1*cosd(alp1+beta1));centX+h1*cosd(180-(alp1+beta1));
                 centX+h1*cosd(180+(alp1+beta1));centX+h1*cosd(-(alp1+beta1))];
                 y = [ (centY+h1*sind(alp1+beta1));centY+h1*sind(180-(alp1+beta1));
@@ -349,7 +357,8 @@ classdef agvClass
                 vertex = [x(1,1) y(1,1);x(2,1) y(2,1);x(3,1) y(3,1);x(4,1) y(4,1)];               
                 face = [1 2 3 4];
                 set(k,'faces',face,'vertices',vertex,'FaceColor',obj.colorface); 
-           % display AGV with PODS.  
+                
+   % Display AGV with PODS.  
            else
                 h2 = sqrt(1000^2+1000^2)/2;
                 x = [ (centX+h2*cosd(45));centX+h2*cosd(180-(45));
@@ -359,9 +368,9 @@ classdef agvClass
                 vertex = [x(1,1) y(1,1);x(2,1) y(2,1);x(3,1) y(3,1);x(4,1) y(4,1)];               
                 face = [1 2 3 4];
                 set(k,'faces',face,'vertices',vertex,'FaceColor',[0.9290 0.6940 0.1250]); 
-            end
+           end
 
-%%%%%%%% AGV ROTATION MOVEMENT
+   % Display AGV rotation movement.
             elseif rota(curRoad,1) == 1                                    % AGV is now in the rotation place.
                 t = 3 ;                                                    % rotation time in second ( based on THESIS)
                 rotAngle = rota(curRoad,2);                                % the total angle to rotate.
@@ -378,7 +387,7 @@ classdef agvClass
                 end  
             end
 
-%%%%%%%%% UPDATE NEW COORDINATE (x,y in mm) 
+%% UPDATING FUNCTION: UPDATE NEW COORDINATE (x,y in mm) 
         obj.coordinateX     =centX;
         obj.coordinateY     =centY;
         obj.beta            =beta1;
@@ -397,6 +406,9 @@ classdef agvClass
                 goalline = obj.goalLine;
                 goalline.Visible = 'off';
                 obj.currentRoad = 1;
+                % Clear time_window
+                deleteTW = find(time_window(:,5) == double(obj.agvName));
+                time_window(deleteTW,:) = [];
                 
         % AUTOMATION CASE: 
             else
@@ -443,12 +455,12 @@ classdef agvClass
 %                 [fpoint_,midpoint_,lastpoint_,obj] = inlineWS(obj.wsName,obj.agvName); 
 %                 
                 obj.currentMission = 3;  
-                timeDelay = 0;
+%                 timeDelay = 0;
                 
       %%%% CHECK AGAIN THE ALGORITHM TO GET NEW GOAL !!
                 % new damn code
                 obj.distanceCost = [0 0 0];
-                obj.waitingFlag = 1;
+                obj.waiting_at_WS_flag = 1;
                 obj.totalDistance =  obj.totalDistance + 5;
                 
                 switch obj.wsName
@@ -580,29 +592,32 @@ classdef agvClass
 %                         end
 %                 end
 
-%%%%%%%% IF : AGV with Pods 
+%%%%%%%% IF : AGV at the WS and already pick out the Goods.
             elseif Mission == 3                
                 obj.currentMission = 4;
-                wsStatus(obj.wsName,3) = wsStatus(obj.wsName,3)-1;
-                deleteTW = find(time_window(:,5) == double(obj.agvName));
-                time_window(deleteTW,:) = [];
+                wsStatus(obj.wsName,3) = wsStatus(obj.wsName,3)-1;         % Can be remove.
+%                 deleteTW = find(time_window(:,5) == double(obj.agvName));
+%                 time_window(deleteTW,:) = [];
                 obj.findPathFlag = 1;
-                totalgood = totalgood + obj.goodHolding;
-                obj.goodHolding = 0;                
-            % Return Pod function
-                emptyPosi = find(podStatus(:,7) == 0 );
+                totalgood = totalgood + obj.goodHolding;                   % Can be remove.
+                obj.goodHolding = 0;                                       % Can be remove.
+        %%% FIND POD THAT CURRENTLY EMPTY TO REMOVE
+                emptyPosi = find(podStatus(:,7) == 0 );                    
                 x = centX;
                 y = centY;
+                
+                % Find the pod that have the lowest distance from the AGV
                 for i = 1: size(emptyPosi,1)
                    pod = emptyPosi(i);
                    podx = podStatus(pod,1);
                    pody = podStatus(pod,2);
                    [pody,podx] = convPod2Node([podx pody]);% currently is node position
-                   finalPod = stor(pody,podx);
-                   
+                   finalPod = stor(pody,podx);       
                    minDist(i) = abs(nodeArray(finalPod,1)-x) + abs(nodeArray(finalPod,2)-y);
                    minPod(i,:) = [podx pody];
                 end
+                
+                % Set the min distance and set new goal.
                 a = find(minDist==min(minDist),1); 
                 obj.goalX = minPod(a,1);
                 obj.goalY = minPod(a,2);
@@ -622,17 +637,20 @@ classdef agvClass
 %                     case 5
 %                             lineOfWS5(1) = [];
 %                 end
+
+            %%% Delete all the Goods from the Order list.
                 tempArray = wsOrdLine(obj.wsName,:);
                 tempArray(obj.deleteOrdLine) = '_';
                 wsOrdLine(obj.wsName,:) = tempArray; 
                 obj.wsName = 0;
-                                
+                 
+        %%% IF AGV ALREADY RETURN THE POD TO EMPTY POSITION. 
             elseif Mission == 4
                 deleteTW = find(time_window(:,5) == double(obj.agvName));
-                time_window(deleteTW,:) = [];
+                time_window(deleteTW,:) = [];                              % compensate by setting that spot to 1 for A*.
                 obj.currentMission = 0; 
                 setpod = find(podShow(:,3)==1 & podShow(:,1)==centX & podShow(:,2)==centY ,1);
-%                 disp('centX'); disp(centX); disp('centY');disp(centY);
+%                 disp('centX'); disp(centX); disp('centY');disp(cen tY);
 %                 disp(setpod);
                 emptyPod(setpod,1).Visible = 'off';
                 podShow(setpod,:) = [ 0 0 0];
@@ -645,7 +663,10 @@ classdef agvClass
                 podStatus(a,4) = obj.Bgoods;
                 podStatus(a,5) = obj.Cgoods;
                 podStatus(a,6) = obj.Dgoods;
-                podStatic(obj.goalY,obj.goalX) = 1; 
+                
+                % Set position when returning the pod to 1.
+                podStatic(obj.goalY,obj.goalX) = 1;
+                agvStatic(obj.goalY,obj.goalX) = 1;   % avoid other AGV to hit when stopping
                 % Something wrong - make the A* wrong when giving same
                 % direction
 %                 podStatus(a,8) = 0;                                
@@ -664,15 +685,21 @@ classdef agvClass
             obj.waitingTime = obj.waitingTime - t_stamp;
             if(obj.waitingTime <=0 )
                 obj.waitingTime =0;
+                % Wrong => AGV will not always DELETE time_window when
+                % finish waiting.
+%                 if obj.currentMission == 4
+%                    deleteTW = find(time_window(:,5) == double(obj.agvName));
+%                    time_window(deleteTW,:) = [];
+%                 end
+                % Clear the stop time when already finish.
                 if ~isempty(obj.timeSlowDown) == 1  
                     obj.timeSlowDown(end,:) = [];
-                    disp('ClearSlowDown');
                 end
+                % Clear the stop position when already finish.
                 if~isempty(obj.slowDownY) == 1 || ~isempty(obj.slowDownX) == 1
                     obj.slowDownY(end,:) = [];
                     obj.slowDownX(end,:) = []; 
                 end
-%                 pause(0.05);
             end
         end
         

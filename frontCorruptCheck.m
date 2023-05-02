@@ -1,6 +1,6 @@
-function type = frontCorruptCheck(corruptWindow,t_in,t_out,A1_Row,A1_Col,B1_Row,B1_Col,time2turn)
+function type = frontCorruptCheck(corruptWindow,t_in,t_out,A1_Row,A1_Col,B1_Row,B1_Col,time2turn,current_type)
     %% CREATE SOME DEFAULT TYPE:
-    collision_type = 0;
+    collision_type = current_type;
     
     %% CHECK ALL WINDOWS THAT HAVE AGV HEAD-2-HEAD:
     for i = 1:size(corruptWindow,1)

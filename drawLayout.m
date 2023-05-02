@@ -5,6 +5,7 @@ function [podsort,rectCenter,nodePosLookUp,nodeStorageArray] = drawLayout()
 % nodePosLookUp : 2D diagram to look up (x,y) position inside "nodeStorageArray" by using (row,column).
 % nodeStorageArray : store all (x,y) dimensions of every Nodes in the layout.
 
+
 %% WAREHOUSE PROPERTIES
 clear
 clc
@@ -375,4 +376,6 @@ rectangle('Position',[nodeStorageArray(nodePosLookUp(42,21),1)-500 nodeStorageAr
 rectangle('Position',[nodeStorageArray(nodePosLookUp(42,45),1)-500 nodeStorageArray(nodePosLookUp(42,45),2)-500 1000 1000],'FaceColor','none','EdgeColor','r','LineWidth',1.5);
 rectangle('Position',[nodeStorageArray(nodePosLookUp(42,70),1)-500 nodeStorageArray(nodePosLookUp(42,70),2)-500 1000 1000],'FaceColor','none','EdgeColor','r','LineWidth',1.5);
 
+disp(nodeStorageArray(nodePosLookUp(4,93),1))
+disp(nodeStorageArray(nodePosLookUp(1,28),2))
 end

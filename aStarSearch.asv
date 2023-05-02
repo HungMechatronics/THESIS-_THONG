@@ -36,9 +36,9 @@ tempStop=double(zeros(Height,Width));
 
 % When AGV is bring the pods back to WS or vise verse.
 % => All the pods is occupied in the close matrice.
-if agvStatus == 2 || agvStatus == 4 
+% if agvStatus == 2 || agvStatus == 4 
     ClosedMAT(podStatic==1) = 1;                                           %Adding object-cells to closed matrix                                      
-end
+% end
 
 ClosedMAT(agvStatic==1) = 1;                                             % Set all the position of AGV to 1.
 
@@ -194,7 +194,7 @@ while true
         
     %%% GET TIME IN AND TIME OUT of currentAGV IF they go in this way. 
         % T_in change when checking each neighbor => T_in show is the last
-        % one.
+        % on
         t_in  = T + GScore(CurrentY,CurrentX) + turn_in_first;
         t_out = T + GScore(CurrentY,CurrentX) + turn_in_first + travel_time + time_2_turn ;
 %         disp("beforE:"); disp(t_out);
@@ -292,8 +292,8 @@ while true
                     end
                     
                     if exist == 0
-%                         slowDownStorage = cat(1,slowDownStorage,temp);    
-                        tempStop(CurrentY,CurrentX) = time2wait;
+                        slowDownStorage = cat(1,slowDownStorage,temp);    
+%                         tempStop(CurrentY,CurrentX) = time2wait;
                     end
                 end    
                 
@@ -354,10 +354,10 @@ if RECONSTRUCTPATH
     k=k+1;
     
 %%% 15/04/2023
-    if tempStop(CurrentY1,CurrentX1) > 0
-        temp = [CurrentY1,CurrentX1,tempStop(CurrentY1,CurrentX1)];
-        slowDownStorage = cat(1,slowDownStorage,temp);
-    end
+%     if tempStop(CurrentY1,CurrentX1) > 0
+%         temp = [CurrentY1,CurrentX1,time2wait];
+%         slowDownStorage = cat(1,slowDownStorage,temp);
+%     end
 
     end 
     end

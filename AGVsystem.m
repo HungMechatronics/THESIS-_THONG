@@ -115,10 +115,10 @@ totalgood = 0;
 global agvArray agvVel agvPosition temp;
 % AGV initial name and position
 agvArr(1,1) = agvClass(1,4,0,1);
-agvArr(2,1) = agvClass(1,8,0,2);
+agvArr(2,1) = agvClass(17,17,0,2);
 agvArr(3,1) = agvClass(1,12,0,3);
-agvArr(4,1) = agvClass(1,16,0,4);
-agvArr(5,1) = agvClass (1,24,0,5);
+agvArr(4,1) = agvClass(20,20,0,4);
+agvArr(5,1) = agvClass(93,24,0,5);
 % agvArr(6,1) = agvClass(1,28,0,6);
 % agvArr(7,1) = agvClass(1,32,0,7);
 % agvArr(8,1) = agvClass(1,36,0,8);
@@ -147,8 +147,8 @@ for i = 1:numberofAGV
    emptypod(i,1) = patch;
 end    
 % Set global variable for other function usage
-patchArray = patchArr;
-emptyPod = emptypod;
+patchArray = patchArr;                                                     % Pod show
+emptyPod = emptypod;                                                       % Hide pod
 
 %% CREATE WAITING LINE ( will be removed )
 global lineOfWS1 lineOfWS2 lineOfWS3 lineOfWS4 lineOfWS5
@@ -157,6 +157,9 @@ lineOfWS2 = [];
 lineOfWS3 = [];
 lineOfWS4 = [];
 lineOfWS5 = [];
+
+global agvStatic;   % avoid hitting AGV that working
+agvStatic = zeros(size(stor,1),size(stor,2));
 
 %% FIRST DISPLAY OF AGV ON GRID
 for i = 1:size(agvArray,1)
@@ -171,11 +174,13 @@ for i = 1:size(agvArray,1)
     vertex = [x(1,1) y(1,1);x(2,1) y(2,1);x(3,1) y(3,1);x(4,1) y(4,1)];               
     face = [1 2 3 4];
     set(patchArray(i,1),'faces',face,'vertices',vertex,'FaceColor',agvArray(i,1).colorface); 
+    agvStatic(agvArray(i,1).positionY,agvArray(i,1).positionX) = 1 ;
 end
 
 %% A-STAR SET UP OBSTACLE MATRIX
-global podStatic;
+global podStatic ;
 podStatic = zeros(size(stor,1),size(stor,2));
+
 % Store the pod in close-list -> Obstacle usage
 for i = 1: size(rectCenter,1)
     temperary = find( nodeArr(:,1)==rectCenter(i,1) & nodeArr(:,2)==rectCenter(i,2) );
@@ -297,7 +302,18 @@ if manualFlag == 0                                                         % Fla
         if mod(int64(T),10) == 0
             wsdata = {};
             for countws = 1:5
-                wstemp = {countws,wsOrdLine(countws,:)};
+                Agoods = find(wsOrdLine(countws,:)=='A');
+                numAgoods = size(Agoods,2);
+                Bgoods = find(wsOrdLine(countws,:)=='B');
+                numBgoods = size(Bgoods,2);
+                Cgoods = find(wsOrdLine(countws,:)=='C');
+                numCgoods = size(Cgoods,2);
+                Dgoods = find(wsOrdLine(countws,:)=='D');
+                numDgoods = size(Dgoods,2);
+%                 list = [ numAgoods numBgoods numCgoods numDgoods ];
+                output = char("Hàng A:" +numAgoods +" | B:" + numBgoods + " | C:" +numCgoods +" | D:" +numDgoods);
+%                 wstemp = {countws,wsOrdLine(countws,:)};
+                wstemp = {countws,output};
                 wsdata = cat(1,wsdata,wstemp);
             end
             set(handles.uitable1,'Data',wsdata);
@@ -386,6 +402,10 @@ elseif manualFlag == 1
             end
             deleteName = [];
         end
+%%%%%%%%% TEMPERARY HOLD ALL THE AGV
+        if get(handles.stopBtn, 'userdata') 
+            break;
+        end
     end    
 end    
 
@@ -397,23 +417,23 @@ for i = 1:numberofAGV
 end
 
 %% DISPLAY WORKING RESULT ( after an amount of time )
-if T >= stopTime
-    figure(2);
-    % Distance
-    subplot(2,2,1);
-    bar(a);
-    line([1 size(a,2)], [mean(a) mean(a)],'Color','r','LineWidth',2);
-    title('Distance per AGV');
-    % Operation Time
-    subplot(2,2,2);
-    bar(e);
-    line([1 size(e,2)], [mean(e) mean(e)],'Color','r','LineWidth',2);
-    title('Operational time per AGV');
-    % Through put
-    subplot(2,1,2);
-    bar(totalgood);
-    title('Total through put in 15 mins');
-end
+% if T >= stopTime
+%     figure(2);
+%     % Distance
+%     subplot(2,2,1);
+%     bar(a);
+%     line([1 size(a,2)], [mean(a) mean(a)],'Color','r','LineWidth',2);
+%     title('Distance per AGV');
+%     % Operation Time
+%     subplot(2,2,2);
+%     bar(e);
+%     line([1 size(e,2)], [mean(e) mean(e)],'Color','r','LineWidth',2);
+%     title('Operational time per AGV');
+%     % Through put
+%     subplot(2,1,2);
+%     bar(totalgood);
+%     title('Total through put in 15 mins');
+% end
 
 % --- Executes on button press in stopBtn.
 function stopBtn_Callback(hObject, eventdata, handles)
