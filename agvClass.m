@@ -125,8 +125,9 @@ classdef agvClass
             set(emptyPod(setpod,1),'faces',face,'vertices',vertex,'FaceColor',[0.75 0.75 0.75]); 
             emptyPod(setpod,1).Visible = 'on';
         else    
-            [finalFscore,finalGoal,obj,distCost] = aStarSearch(x,y,x1,y1,stor,1,obj.currentMission,obj.agvName);
+            [finalFscore,finalGoal,obj,distCost] = aStarSearch(x,y,x1,y1,stor,1,obj.currentMission,obj.agvName,lastDir);
             % row,col -> x,y
+            agvStatic(obj.positionY,obj.positionX) = 0;                    % AGV moving -> remove the block on MAP.
             obj.distanceCost = distCost;
             obj.finalScore = finalFscore;
             
@@ -224,7 +225,6 @@ classdef agvClass
             obj.goalX = x1;
             obj.goalY = y1;
             obj.findPathFlag = 0;
-            agvStatic(obj.positionY,obj.positionX) = 0;                    % AGV moving -> remove the block on MAP.
         else
             obj.waitingTime = 5;
             obj.findPathFlag = 1;
@@ -233,14 +233,19 @@ classdef agvClass
     end
 %% UPDATE AGV        
     function obj = updateAGV(obj,t_stamp,agvPatch,fig)
+    global T
     %% IF THERE IS NOT PATH FINDING
-       if obj.findPathFlag ==1  
-            obj = getcurrentPath(obj,obj.goalX ,obj.goalY,fig);                    
-       end    
+       if obj.waitingTime == 0
+          if obj.findPathFlag ==1  
+              disp('Time AGV ');disp(obj.agvName);disp('do A*: ');disp(T);
+              obj = getcurrentPath(obj,obj.goalX ,obj.goalY,fig);
+          end  
+       end
 
     %% GET SOME VARIABLES
-       global podStatic podStatus nodeArray stor time_window wsStatus T agvArray emptyPod podShow manualFrame totalgood agvStatic;
-       global lineOfWS1 lineOfWS2 lineOfWS3 lineOfWS4 lineOfWS5 wsOrdLine
+       global podStatic podStatus nodeArray stor time_window wsStatus agvArray emptyPod podShow manualFrame totalgood agvStatic;
+       global lineOfWS1 lineOfWS2 lineOfWS3 lineOfWS4 lineOfWS5 wsOrdLine show_time_window
+
        centX = obj.coordinateX;
        centY = obj.coordinateY;
        beta1 = obj.beta;
@@ -272,9 +277,13 @@ classdef agvClass
     % If slow down position is in next goal -> set waiting time in AGV.
       if obj.waitingTime == 0
         if (~isempty(obj.timeSlowDown) == 1 && ~isempty(obj.slowDownY) == 1)
-           if( goal_(curRoad+1,1)==nodeArray(stor(obj.slowDownY(end,1),obj.slowDownX(end,1)),1) &&...
-               goal_(curRoad+1,2)==nodeArray(stor(obj.slowDownY(end,1),obj.slowDownX(end,1)),2))
-               obj.waitingTime = obj.timeSlowDown(end,1);
+%            if( goal_(curRoad+1,1)==nodeArray(stor(obj.slowDownY(end,1),obj.slowDownX(end,1)),1) &&...
+%                goal_(curRoad+1,2)==nodeArray(stor(obj.slowDownY(end,1),obj.slowDownX(end,1)),2))
+%                obj.waitingTime = obj.timeSlowDown(end,1);
+            % 21/05/2023
+           if( goal_(curRoad+1,1)==nodeArray(stor(obj.slowDownY(1,1),obj.slowDownX(1,1)),1) &&...
+               goal_(curRoad+1,2)==nodeArray(stor(obj.slowDownY(1,1),obj.slowDownX(1,1)),2))
+               obj.waitingTime = obj.timeSlowDown(1,1);
 %                obj.waitingFlag = 1;
            end
         end
@@ -287,13 +296,13 @@ classdef agvClass
    % NO:  Continue doing.
         if obj.waiting_at_WS_flag == 1
 %             if Mission == 3 && curRoad == 3 
-            if Mission == 3 && curRoad == 1 
+            if obj.currentMission == 3 && obj.currentRoad == 1 
                 if obj.wsName == 1 || obj.wsName == 2 || obj.wsName == 3
 %                 obj.waitingTime = 1 + (obj.goodHolding-1)*8; 
-                obj.waitingTime = 4; 
+                obj.waitingTime = 5; 
                 else
 %                 obj.waitingTime = 1 + (obj.goodHolding-1)*8; 
-                obj.waitingTime = 4; 
+                obj.waitingTime = 5; 
                 end
                 obj.waiting_at_WS_flag = 0;
             end
@@ -306,35 +315,47 @@ classdef agvClass
               if Mission ~=3   % only check the goal 
                 if( direct(curRoad) == 'N')
                     centY = centY + v*t_stamp;
-                    if centY >= goal_(curRoad+1,2)+20
+                    if centY >= goal_(curRoad+1,2)+0.1
+%                     if centY >= goal_(curRoad+1,2)+20
                         nextNodeFlag = 1;
+                        if goal_(curRoad+1,2) == goal_(end,2)
                         centY = goal_(curRoad+1,2); % added code
+                        end
                         % Add distance 
                         obj.totalDistance = obj.totalDistance + obj.distanceCost(curRoad);
                     end
                     
                 elseif( direct(curRoad) == 'S')
                     centY = centY - v*t_stamp;
-                    if centY <= goal_(curRoad+1,2) - 20
+                    if centY <= goal_(curRoad+1,2) - 0.1
+%                     if centY <= goal_(curRoad+1,2) - 20
                         nextNodeFlag = 1;
+                        if goal_(curRoad+1,2) == goal_(end,2)
                         centY = goal_(curRoad+1,2); 
+                        end
                         % Add distance 
                         obj.totalDistance = obj.totalDistance + obj.distanceCost(curRoad);
                     end
                     
                 elseif( direct(curRoad) == 'E')
                     centX = centX + v*t_stamp;
-                    if centX >= goal_(curRoad+1,1) + 20
+                    if centX >= goal_(curRoad+1,1) + 0.1
+%                     if centX >= goal_(curRoad+1,1) + 20
                         nextNodeFlag = 1;
+                        if goal_(curRoad+1,1) == goal_(end,1)
                         centX = goal_(curRoad+1,1); % added code
+                        end
                         % Add distance 
                         obj.totalDistance = obj.totalDistance + obj.distanceCost(curRoad);
                     end        
                 elseif( direct(curRoad) == 'W')   
                     centX = centX - v*t_stamp;
-                    if centX <= goal_(curRoad+1,1) - 20
+                    if centX <= goal_(curRoad+1,1) - 0.1
+%                     if centX <= goal_(curRoad+1,1) - 20
                         nextNodeFlag = 1;
+                        if goal_(curRoad+1,1) == goal_(end,1)
                         centX = goal_(curRoad+1,1); % added code
+                        end
                         % Add distance 
                         obj.totalDistance = obj.totalDistance + obj.distanceCost(curRoad);
                     end        
@@ -372,7 +393,11 @@ classdef agvClass
 
    % Display AGV rotation movement.
             elseif rota(curRoad,1) == 1                                    % AGV is now in the rotation place.
-                t = 3 ;                                                    % rotation time in second ( based on THESIS)
+                if (mod(rota(curRoad,2),360) == 180) || (mod(rota(curRoad,2),360) == -180)
+                    t = 6 ;                                                    % rotation time in second ( based on THESIS)
+                else 
+                    t = 3 ; 
+                end
                 rotAngle = rota(curRoad,2);                                % the total angle to rotate.
                 rotStep = rotAngle/(t/t_stamp);                            % divide to each 0.1s angle.
                 
@@ -408,7 +433,9 @@ classdef agvClass
                 obj.currentRoad = 1;
                 % Clear time_window
                 deleteTW = find(time_window(:,5) == double(obj.agvName));
+                show_time_window = time_window;                            % Create to display time_window
                 time_window(deleteTW,:) = [];
+                agvStatic(obj.goalY,obj.goalX) = 1;
                 
         % AUTOMATION CASE: 
             else
@@ -429,7 +456,7 @@ classdef agvClass
                 obj.goalX = wsX;                                           % set the next goal to workstation.
                 obj.goalY = wsY;                                           % set the next goal to workstation
                 obj.findPathFlag = 1;                                      % set the flag for getCurrentPath() function.
-                obj.waitingTime = 3;                                       % wait for 3 seconds to lift the pods.
+                obj.waitingTime = 5;                                       % wait for 3 seconds to lift the pods.
                 
             % VISIBLE THE POD THAT HAD BEEN TAKEN.
                 setpod = find(podShow(:,3)==0,1);
@@ -654,7 +681,7 @@ classdef agvClass
 %                 disp(setpod);
                 emptyPod(setpod,1).Visible = 'off';
                 podShow(setpod,:) = [ 0 0 0];
-                obj.waitingTime = 3;
+                obj.waitingTime = 3;                                       % thoi gian ha ke hang.
                 
                 [goalPod(1,2),goalPod(1,1)] = convNode2Pod([obj.goalY,obj.goalX]);                
                 a = find(podStatus(:,1) == goalPod(1,2) & podStatus(:,2) == goalPod(1,1),1);                 
@@ -683,8 +710,10 @@ classdef agvClass
 %% IN CASE AGV IS IN A WAITING SITUATION
         else        
             obj.waitingTime = obj.waitingTime - t_stamp;
+%             agvStatic(obj.goalY,obj.goalX) = 1;
             if(obj.waitingTime <=0 )
                 obj.waitingTime =0;
+                agvStatic(obj.goalY,obj.goalX) = 0;
                 % Wrong => AGV will not always DELETE time_window when
                 % finish waiting.
 %                 if obj.currentMission == 4
@@ -693,12 +722,15 @@ classdef agvClass
 %                 end
                 % Clear the stop time when already finish.
                 if ~isempty(obj.timeSlowDown) == 1  
-                    obj.timeSlowDown(end,:) = [];
+                    obj.timeSlowDown(1,:) = [];
                 end
                 % Clear the stop position when already finish.
                 if~isempty(obj.slowDownY) == 1 || ~isempty(obj.slowDownX) == 1
-                    obj.slowDownY(end,:) = [];
-                    obj.slowDownX(end,:) = []; 
+%                     obj.slowDownY(end,:) = [];
+%                     obj.slowDownX(end,:) = []; 
+                    % 21/05/2023
+                    obj.slowDownY(1,:) = [];
+                    obj.slowDownX(1,:) = []; 
                 end
             end
         end

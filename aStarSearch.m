@@ -1,8 +1,8 @@
-   function [finalFscore,OptimalPath,obj,road]=aStarSearch(StartX,StartY,GoalX,GoalY,MAP,Connecting_Distance,agvStatus,agvName)
+   function [finalFscore,OptimalPath,obj,road]=aStarSearch(StartX,StartY,GoalX,GoalY,MAP,Connecting_Distance,agvStatus,agvName,lastDir)
 
 global nodeArray nodeArr podStatic agvStatic time_window T agvArray stor;
 
-global agvPosition
+
 %% VARIABLES
 % Slow down positions
 agvArray(agvName,1).slowDownY = [];                                        % waiting position X
@@ -11,6 +11,9 @@ agvArray(agvName,1).timeSlowDown = [];                                     % tim
 slowDownStorage = [0 0 0];                                                 % [row,column,time_2_wait]
 exist = 0;
 
+% 03_05_2023
+tempStopArray = [0 0 0 0 0];
+t_in_out_coop = [0 0 0 0 0 0];   % [node_in node_out t_in t_out]
 % Other variables
 finalFscore = 0;
 checkWindow = [];
@@ -31,6 +34,8 @@ Hn=double(zeros(Height,Width));                                            % Mat
 FScore=double(inf(Height,Width));                                          % Matrix keeping track of F-scores (only open list)
 OpenMAT=double(zeros(Height,Width));                                       % Matrix keeping track of Open-list
 ClosedMAT=double(zeros(Height,Width));                                     % Matrix keeping track of Close-list
+tOUT = double(zeros(Height,Width));
+tIN = double(zeros(Height,Width));
 
 tempStop=double(zeros(Height,Width)); 
 
@@ -138,40 +143,67 @@ while true
     %%% NOTE: The usage of tenp_index might be wrong => NOW turn into NEXT
     %%% ( 27 -04 -2023 );
     %%% various beta to cover => example : -360
+%         if temp_index == 1
+%             if ( (mod(agvArray(agvName,1).beta,360) == 0) &&...
+%                  (agvArray(agvName,1).coordinateX==nodeArr(next,1)) && (agvArray(agvName,1).coordinateY < nodeArr(next,2)) ) ||...
+%                ( ((mod(agvArray(agvName,1).beta,360) == 90) || (mod(agvArray(agvName,1).beta,360) == -270)) &&... 
+%                  (agvArray(agvName,1).coordinateY==nodeArr(next,2)) && (agvArray(agvName,1).coordinateX < nodeArr(next,1)) ) ||... 
+%                ( ((mod(agvArray(agvName,1).beta,360) == -180) || (mod(agvArray(agvName,1).beta,360) == 180)) &&...
+%                  (agvArray(agvName,1).coordinateX==nodeArr(next,1)) && (agvArray(agvName,1).coordinateY > nodeArr(next,2)) ) ||...
+%                ( ((mod(agvArray(agvName,1).beta,360) == -90) || (mod(agvArray(agvName,1).beta,360) == 270)) &&... 
+%                  (agvArray(agvName,1).coordinateY==nodeArr(next,2)) && (agvArray(agvName,1).coordinateX > nodeArr(next,1)))
+%                 turn_in_first = 0;
+%     %%% TURN 180
+%             elseif ( (mod(agvArray(agvName,1).beta,360) == 0) && ...
+%                     ( agvArray(agvName,1).coordinateX == nodeArr(next ,1) )&&( agvArray(agvName,1).coordinateY > nodeArr(next,2))) ||...
+%                    ( ((mod(agvArray(agvName,1).beta,360) == -180) || (mod(agvArray(agvName,1).beta,360) == 180)) &&...
+%                     ( agvArray(agvName,1).coordinateX ==nodeArr(next,1)) && ( agvArray(agvName,1).coordinateY < nodeArr(next,2))) ||...
+%                    ( ((mod(agvArray(agvName,1).beta,360) == -90) || (mod(agvArray(agvName,1).beta,360) == 270)) &&...
+%                     (agvArray(agvName,1).coordinateY==nodeArr(next,2)) && (agvArray(agvName,1).coordinateX < nodeArr(next,1))) ||...
+%                    ( ((mod(agvArray(agvName,1).beta,360) == 90) || (mod(agvArray(agvName,1).beta,360) == -270)) &&... 
+%                     (agvArray(agvName,1).coordinateY==nodeArr(next,2)) && (agvArray(agvName,1).coordinateX > nodeArr(next,1)))
+%                 turn_in_first = 6;
+%             else
+%                 turn_in_first = 3;
+%             end
+           
+    %%% ( 14 -05 -2023 );
+    %%% various beta to cover => example : -360
         if temp_index == 1
-            if ( (mod(agvArray(agvName,1).beta,360) == 0) &&...
+            if ( (lastDir == 'N' || isempty(lastDir)) &&...
                  (agvArray(agvName,1).coordinateX==nodeArr(next,1)) && (agvArray(agvName,1).coordinateY < nodeArr(next,2)) ) ||...
-               ( ((mod(agvArray(agvName,1).beta,360) == 90) || (mod(agvArray(agvName,1).beta,360) == -270)) &&... 
+               ( (lastDir == 'E') &&... 
                  (agvArray(agvName,1).coordinateY==nodeArr(next,2)) && (agvArray(agvName,1).coordinateX < nodeArr(next,1)) ) ||... 
-               ( ((mod(agvArray(agvName,1).beta,360) == -180) || (mod(agvArray(agvName,1).beta,360) == 180)) &&...
+               ( (lastDir == 'S') &&...
                  (agvArray(agvName,1).coordinateX==nodeArr(next,1)) && (agvArray(agvName,1).coordinateY > nodeArr(next,2)) ) ||...
-               ( ((mod(agvArray(agvName,1).beta,360) == -90) || (mod(agvArray(agvName,1).beta,360) == 270)) &&... 
+               ( (lastDir == 'W') &&... 
                  (agvArray(agvName,1).coordinateY==nodeArr(next,2)) && (agvArray(agvName,1).coordinateX > nodeArr(next,1)))
                 turn_in_first = 0;
     %%% TURN 180
-            elseif ( (mod(agvArray(agvName,1).beta,360) == 0) && ...
+            elseif ( (lastDir == 'N' || isempty(lastDir)) && ...
                     ( agvArray(agvName,1).coordinateX == nodeArr(next ,1) )&&( agvArray(agvName,1).coordinateY > nodeArr(next,2))) ||...
-                   ( ((mod(agvArray(agvName,1).beta,360) == -180) || (mod(agvArray(agvName,1).beta,360) == 180)) &&...
+                   ( (lastDir == 'S') &&...
                     ( agvArray(agvName,1).coordinateX ==nodeArr(next,1)) && ( agvArray(agvName,1).coordinateY < nodeArr(next,2))) ||...
-                   ( ((mod(agvArray(agvName,1).beta,360) == -90) || (mod(agvArray(agvName,1).beta,360) == 270)) &&...
+                   ( (lastDir == 'W') &&...
                     (agvArray(agvName,1).coordinateY==nodeArr(next,2)) && (agvArray(agvName,1).coordinateX < nodeArr(next,1))) ||...
-                   ( ((mod(agvArray(agvName,1).beta,360) == 90) || (mod(agvArray(agvName,1).beta,360) == -270)) &&... 
+                   ( (lastDir == 'E') &&... 
                     (agvArray(agvName,1).coordinateY==nodeArr(next,2)) && (agvArray(agvName,1).coordinateX > nodeArr(next,1)))
                 turn_in_first = 6;
             else
                 turn_in_first = 3;
             end
-            disp('With AGV:'); disp(agvArray(agvName,1).agvName);
-            disp('Angle:');disp((mod(agvArray(agvName,1).beta,360)));
-            disp('And: ');  disp(agvArray(agvName,1).coordinateY); disp(nodeArr(next,2));
-            disp('And: ');  disp(agvArray(agvName,1).coordinateX); disp(nodeArr(next,1));
-            disp('We have: '); disp(turn_in_first);
+            
+%             disp('With AGV:'); disp(agvArray(agvName,1).agvName);
+%             disp('Angle:');disp((mod(agvArray(agvName,1).beta,360)));
+%             disp('And: ');  disp(agvArray(agvName,1).coordinateY); disp(nodeArr(next,2));
+%             disp('And: ');  disp(agvArray(agvName,1).coordinateX); disp(nodeArr(next,1));
+%             disp('We have: '); disp(turn_in_first);
         elseif temp_index >= 2                                                 
             past = MAP(ParentY(CurrentY,CurrentX),ParentX(CurrentY,CurrentX));
             
         %%% Check if there is a turning point => another AGV have to wait for turning point.
-            if( (nodeArr(now,1) == nodeArr(next,1) && nodeArr(next,1) == nodeArr(past,1)) ||...
-                (nodeArr(now,2) == nodeArr(next,2) && nodeArr(next,2) == nodeArr(past,2)))
+            if( ( (nodeArr(now,1) == nodeArr(next,1)) && (nodeArr(next,1) == nodeArr(past,1)) ) ||...
+                ( (nodeArr(now,2) == nodeArr(next,2)) && (nodeArr(next,2) == nodeArr(past,2)) ))
                 time_2_turn = 0;
             else                  
                 time_2_turn = 3;
@@ -195,13 +227,20 @@ while true
     %%% GET TIME IN AND TIME OUT of currentAGV IF they go in this way. 
         % T_in change when checking each neighbor => T_in show is the last
         % one.
-        t_in  = T + GScore(CurrentY,CurrentX) + turn_in_first;
-        t_out = T + GScore(CurrentY,CurrentX) + turn_in_first + travel_time + time_2_turn ;
-%         disp("beforE:"); disp(t_out);
+%         t_in  = T + GScore(CurrentY,CurrentX) + turn_in_first;
+%         t_out = T + GScore(CurrentY,CurrentX) + turn_in_first + travel_time + time_2_turn ;
+%         t_out_cross = t_in;
+        
+        % 19/05/2023
+        t_in  = T + GScore(CurrentY,CurrentX) + turn_in_first + time_2_turn;
+        t_out = t_in + travel_time ;
+
     %%% FIND AGV THAT TRAVELS THE SAME ROAD.
         % old: checkWindow_1,_2 are same road sign
-        sameroad_window_1 = find(time_window(:,1) == double(CurrentY) & time_window(:,2) == double(CurrentX) & time_window(:,3) == double(CurrentY+i) & time_window(:,4) == double(CurrentX+j)); 
-        sameroad_window_2 = find(time_window(:,3) == double(CurrentY) & time_window(:,4) == double(CurrentX) & time_window(:,1) == double(CurrentY+i) & time_window(:,2) == double(CurrentX+j)); 
+        % A1 = A2 && B1 = B2
+        sameroad_window_1 = find(time_window(:,1) == double(CurrentY) & time_window(:,2) == double(CurrentX) & time_window(:,3) == double(nextY) & time_window(:,4) == double(nextX)); 
+        % A1 = B2 && B1 = A2
+        sameroad_window_2 = find(time_window(:,3) == double(CurrentY) & time_window(:,4) == double(CurrentX) & time_window(:,1) == double(nextY) & time_window(:,2) == double(nextX)); 
 
     %%% FIND POSITION THAT AGV WILL STOP OR TURN
         % old: checkWindow_7 is stop sign
@@ -212,7 +251,16 @@ while true
     %   TYPE 1: Head-2-head collision .
     %   TYPE 2: NOT DEFINE YET.
     %   TYPE 3: AGV stop/turn collision ( at WS ).
-    
+    %% / CHECK FOR HEAD-TO-HEAD COLLISION !!
+    if corruptType~=1
+    if ( ~isempty(sameroad_window_2)==1 )
+        head_2_head_frame = sameroad_window_2;
+%             head_2_head_frame  = cat(1,sameroad_window_1,sameroad_window_2);
+        head_2_head_Window = time_window(head_2_head_frame,:);         % Sort out the time_window.
+        corruptType = frontCorruptCheck(head_2_head_Window,t_in,t_out,CurrentY,CurrentX,CurrentY+i,CurrentX+j,time_2_turn,corruptType);
+    end
+    end
+        
     %% / CHECK FOR STOP/TURN COLLISION FIRST !!
         if corruptType~=1
         if ~isempty(stop_window_1) == 1
@@ -220,13 +268,15 @@ while true
            [corruptType,time2wait] = stopCorruptCheck(t_in,t_out,stopWindow,corruptType,time2wait);
         end
         end
-    %% / CHECK FOR INTERSECTION COLLISION !! 
-        if corruptType~=1
-        if ~isempty(intersect_window_1) == 1
-            cross_Window = time_window(intersect_window_1,:);
-            [corruptType,time2wait] = crossCollisionCheck(pastY,pastX,CurrentY,CurrentX,nextY,nextX,t_in,t_out,cross_Window,time_2_turn,corruptType,time2wait);
-        end 
-        end
+%     %% / CHECK FOR INTERSECTION COLLISION !! 
+%         if corruptType~=1
+%         if ~isempty(intersect_window_1) == 1
+%             cross_Window = time_window(intersect_window_1,:);
+%             % New edit 15-05-2023
+% %             [corruptType,time2wait] = crossCollisionCheck(pastY,pastX,CurrentY,CurrentX,nextY,nextX,t_in,t_out,cross_Window,time_2_turn,corruptType,time2wait);
+%             [corruptType,time2wait] = crossCollisionCheck(pastY,pastX,CurrentY,CurrentX,nextY,nextX,t_in,t_in,cross_Window,time_2_turn,corruptType,time2wait);
+%         end 
+%         end
     %% / CHECK FOR CHASING COLLISION !!
         if corruptType~=1
         if ~isempty(sameroad_window_1) == 1
@@ -234,31 +284,46 @@ while true
             [corruptType,time2wait] = chaseCorruptCheck(CurrentY,CurrentX,CurrentY+i,CurrentX+j,t_in,t_out,chaseWindow,time_2_turn,corruptType,time2wait);
         end
         end
-    %% / CHECK FOR HEAD-TO-HEAD COLLISION !!
+        %% / CHECK FOR INTERSECTION COLLISION !! 
         if corruptType~=1
-        if ( ~isempty(sameroad_window_1) == 1 || ~isempty(sameroad_window_2)==1 )
-            head_2_head_frame  = cat(1,sameroad_window_1,sameroad_window_2);
-            head_2_head_Window = time_window(head_2_head_frame,:);         % Sort out the time_window.
-            corruptType = frontCorruptCheck(head_2_head_Window,t_in,t_out,CurrentY,CurrentX,CurrentY+i,CurrentX+j,time_2_turn,corruptType);
+        if ~isempty(intersect_window_1) == 1
+            cross_Window = time_window(intersect_window_1,:);
+            % New edit 15-05-2023
+%             [corruptType,time2wait] = crossCollisionCheck(pastY,pastX,CurrentY,CurrentX,nextY,nextX,t_in,t_out,cross_Window,time_2_turn,corruptType,time2wait);
+            [corruptType,time2wait] = crossCollisionCheck(pastY,pastX,CurrentY,CurrentX,nextY,nextX,t_in,t_in,cross_Window,time_2_turn,corruptType,time2wait);
+        end 
         end
-        end
+%     %% / CHECK FOR HEAD-TO-HEAD COLLISION !!
+%         if corruptType~=1
+%         if ( ~isempty(sameroad_window_2)==1 )
+%             head_2_head_frame = sameroad_window_2;
+% %             head_2_head_frame  = cat(1,sameroad_window_1,sameroad_window_2);
+%             head_2_head_Window = time_window(head_2_head_frame,:);         % Sort out the time_window.
+%             corruptType = frontCorruptCheck(head_2_head_Window,t_in,t_out,CurrentY,CurrentX,CurrentY+i,CurrentX+j,time_2_turn,corruptType);
+%         end
+%         end
     %% / Update t_out for waiting case
-        t_out = (t_out + time2wait);
-%         disp("After:"); disp(t_out);
+%       t_out = t_out + time2wait;
+
+    % 19/05/2023
+        t_in = t_in + time2wait;
+        t_out = t_in + travel_time;
+
 %% ACTIONS AFTER DEFINE THE COLLISION TYPE:   
 %         if corruptType ~= 0
 %             disp(corruptType);
 %         end
         if corruptType == 1
 %             GScore(CurrentY,CurrentX) = 10000;
-            tentative_gScore = 10000;
+            tentative_gScore = inf; %21/05/2023
+%             tentative_gScore = 10000;
             ClosedMAT(CurrentY+i,CurrentX+j) = 1;
         elseif corruptType == 2
-%             GScore(CurrentY,CurrentX) = 10000;
-            tentative_gScore = 10000;
+            tentative_gScore = inf; %21/05/2023
+%             tentative_gScore = 10000;
             ClosedMAT(CurrentY+i,CurrentX+j) = 1;
         elseif corruptType == 3
-            tentative_gScore = GScore(CurrentY,CurrentX) + travel_time + time2wait + time_2_turn + turn_in_first;
+            tentative_gScore = GScore(CurrentY,CurrentX) + travel_time + time_2_turn + turn_in_first + time2wait;
         else
             tentative_gScore = GScore(CurrentY,CurrentX) + travel_time + time_2_turn + turn_in_first;             
         end
@@ -279,21 +344,13 @@ while true
                 end
                 
                 if (corruptType == 3)
-%                     agvArray(agvName,1).slowDownY = CurrentY;
-%                     agvArray(agvName,1).slowDownX = CurrentX;
-                    temp = [CurrentY,CurrentX,time2wait];
-%                     slowDownStorage = cat(1,slowDownStorage,temp);
 
-                    for count = 1:size(slowDownStorage,1)
-                        exist = 0;
-                        if( temp(1,1) == slowDownStorage(count,1) && temp(1,2) == slowDownStorage(count,2))
-                            exist = 1;
-                        end                    
-                    end
                     
                     if exist == 0
-%                         slowDownStorage = cat(1,slowDownStorage,temp);    
-                        tempStop(CurrentY,CurrentX) = time2wait;
+                        
+%                         stopPosition = [double(ParentY(CurrentY,CurrentX)) double(ParentX(CurrentY,CurrentX)) double(CurrentY) double(CurrentX) time2wait];
+                        stopPosition = [double(CurrentY) double(CurrentX) double(CurrentY+i) double(CurrentX+j) time2wait];
+                        tempStopArray = cat(1,tempStopArray,stopPosition);
                     end
                 end    
                 
@@ -301,7 +358,11 @@ while true
                 ParentX(CurrentY+i,CurrentX+j)=CurrentX;
                 ParentY(CurrentY+i,CurrentX+j)=CurrentY;               
                 tIN(CurrentY,CurrentX) = t_in;
-                tOUT(CurrentY+i,CurrentX+j) = t_out;  
+                tOUT(CurrentY+i,CurrentX+j) = t_out;
+                % new code 19/05/2023
+                temp_coop = [CurrentY,CurrentX,CurrentY+i,CurrentX+j,t_in,t_out];
+                t_in_out_coop = cat(1,t_in_out_coop,temp_coop);
+                
 %                 tOUT(CurrentY,CurrentX) = t_out; 
                 GScore(CurrentY+i,CurrentX+j) = tentative_gScore;
                 FScore(CurrentY+i,CurrentX+j)= tentative_gScore + Hn(CurrentY+i,CurrentX+j); % final fScore 
@@ -336,12 +397,32 @@ if RECONSTRUCTPATH
     CurrentX=CurrentXDummy;
     OptimalPath(k,:)=[CurrentY CurrentX];
 %%% CHECK THIS TEMP_WINDOW
-    if k == 2
-        % add a tolerance for lifting pods around 5 seconds
-        temp_window =[ OptimalPath(k,1),OptimalPath(k,2),OptimalPath(k-1,1),OptimalPath(k-1,2),agvName,tIN(CurrentY,CurrentX),tOUT(CurrentY1,CurrentX1)+5,OptimalPath(k-1,1),OptimalPath(k-1,2),agvStatus];
-    else
-        temp_window =[ OptimalPath(k,1),OptimalPath(k,2),OptimalPath(k-1,1),OptimalPath(k-1,2),agvName,tIN(CurrentY,CurrentX),tOUT(CurrentY1,CurrentX1),OptimalPath(k-2,1),OptimalPath(k-2,2),agvStatus];
+    % 19/05/2023
+    trace_back = find(t_in_out_coop(:,1)==CurrentY  & t_in_out_coop(:,2)==CurrentX &...
+                      t_in_out_coop(:,3)==CurrentY1 & t_in_out_coop(:,4)==CurrentX1);
+    trace_back_01 = find(t_in_out_coop(:,1)==ParentY(CurrentY,CurrentX)  & t_in_out_coop(:,2)==ParentX(CurrentY,CurrentX) &...
+                      t_in_out_coop(:,3)==CurrentY & t_in_out_coop(:,4)==CurrentX);
+                  
+    % bull shit things on 19/05/2023
+    if t_in_out_coop(trace_back,5) ~= t_in_out_coop(trace_back_01,6)
+        t_in_out_coop(trace_back_01,6) = t_in_out_coop(trace_back,5);
     end
+    
+    if k == 2
+        % 23/05/2023
+        if agvArray(agvName,1).currentMission == 1 || agvArray(agvName,1).currentMission == 4
+            time_at_end = 3;
+        elseif agvArray(agvName,1).currentMission == 2
+            time_at_end = 5;
+        end
+        % add a tolerance for lifting pods around 5 seconds
+        temp_window =[ OptimalPath(k,1),OptimalPath(k,2),OptimalPath(k-1,1),OptimalPath(k-1,2),agvName,t_in_out_coop(trace_back,5),t_in_out_coop(trace_back,6)+time_at_end ,OptimalPath(k-1,1),OptimalPath(k-1,2),agvStatus];
+%         temp_window =[ OptimalPath(k,1),OptimalPath(k,2),OptimalPath(k-1,1),OptimalPath(k-1,2),agvName,tIN(CurrentY,CurrentX),tOUT(CurrentY1,CurrentX1)+5,OptimalPath(k-1,1),OptimalPath(k-1,2),agvStatus];
+    else
+        temp_window =[ OptimalPath(k,1),OptimalPath(k,2),OptimalPath(k-1,1),OptimalPath(k-1,2),agvName,t_in_out_coop(trace_back,5),t_in_out_coop(trace_back,6),OptimalPath(k-2,1),OptimalPath(k-2,2),agvStatus];
+%         temp_window =[ OptimalPath(k,1),OptimalPath(k,2),OptimalPath(k-1,1),OptimalPath(k-1,2),agvName,tIN(CurrentY,CurrentX),tOUT(CurrentY1,CurrentX1),OptimalPath(k-2,1),OptimalPath(k-2,2),agvStatus];
+    end
+        
     time_window = cat(1,time_window,temp_window); 
     now = MAP(OptimalPath(k,1),OptimalPath(k,2));
     next = MAP(OptimalPath(k-1,1),OptimalPath(k-1,2));
@@ -354,11 +435,28 @@ if RECONSTRUCTPATH
     k=k+1;
     
 %%% 15/04/2023
-    if tempStop(CurrentY1,CurrentX1) > 0
-        temp = [CurrentY1,CurrentX1,tempStop(CurrentY1,CurrentX1)];
-        slowDownStorage = cat(1,slowDownStorage,temp);
-    end
+%     if tempStop(CurrentY1,CurrentX1) > 0
+%         temp = [CurrentY1,CurrentX1,tempStop(CurrentY1,CurrentX1)];
+%         slowDownStorage = cat(1,slowDownStorage,temp);
+%     end
+%     
 
+%%% 13/05/2023
+%     disp(CurrentY);disp(CurrentX);
+%     disp(CurrentY1);disp(CurrentX1); 
+    % Find if there is a stopping point.
+    isStoping = find( tempStopArray(:,1) == double(CurrentY) & tempStopArray(:,2) == double(CurrentX) &...
+                tempStopArray(:,3) == double(CurrentY1) & tempStopArray(:,4) == double(CurrentX1));
+    
+    if ~isempty(isStoping) == 1
+        % 19/05/2023 -> Check again.
+        disp(tempStopArray)
+        disp(tempStopArray(isStoping,:))
+        temp = [CurrentY,CurrentX,max(tempStopArray(isStoping,5))];
+%         temp = [CurrentY1,CurrentX1,max(tempStopArray(isStoping,5))];
+        slowDownStorage = cat(1,slowDownStorage,temp);
+        isStoping = [];
+    end 
     end 
     end
 end
@@ -380,7 +478,9 @@ if OptimalPath ~= double(inf(1,1))
         end       
     end
 end
-
+disp(agvArray(agvName,1).slowDownY);
+disp(agvArray(agvName,1).slowDownX);
+disp(agvArray(agvName,1).timeSlowDown);
 
 obj = agvArray(agvName,1);
 % finalFscore = FScore(OptimalPath(1,1),OptimalPath(1,2));

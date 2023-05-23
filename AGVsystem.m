@@ -8,7 +8,7 @@ function varargout = AGVsystem(varargin)
 %
 %      AGVSYSTEM('CALLBACK',hObject,eventData,handles,...) calls the local
 %      function named CALLBACK in AGVSYSTEM.M with the given input arguments.
-% 
+%  
 %      AGVSYSTEM('Property','Value',...) creates a new AGVSYSTEM or raises the
 %      existing singleton*.  Starting from the left, property value pairs are
 %      applied to the GUI before AGVsystem_OpeningFcn gets called.  An
@@ -114,10 +114,10 @@ totalgood = 0;
 %% INITIAL POSITION FOR AGV
 global agvArray agvVel agvPosition temp;
 % AGV initial name and position
-agvArr(1,1) = agvClass(1,4,0,1);
-agvArr(2,1) = agvClass(17,17,0,2);
+agvArr(1,1) = agvClass(1,4,0,1);                                           % (cot,hang,goc,ten)
+agvArr(2,1) = agvClass(16,17,0,2);
 agvArr(3,1) = agvClass(1,12,0,3);
-agvArr(4,1) = agvClass(20,20,0,4);
+agvArr(4,1) = agvClass(24,17,0,4);
 agvArr(5,1) = agvClass(93,24,0,5);
 % agvArr(6,1) = agvClass(1,28,0,6);
 % agvArr(7,1) = agvClass(1,32,0,7);
@@ -211,7 +211,7 @@ end
 % Generate  podStatus & random A-B-C-D
 % Generate the number of good
 c_ = [];
-d_ = [];
+d_ = []; 
 b_ = transpose(1:1:75);
 for i= 1:26
     a_ = i*ones(75,1); % change argument
@@ -277,6 +277,7 @@ function startBtn_Callback(hObject, eventdata, handles)
 global agvArray patchArray t_stamp numberofAGV T podStatus podShow emptyPod totalgood table  ;
 global stopTime manualFrame manualFlag wsOrdLine;
 global lineOfWS1 lineOfWS2 lineOfWS3 lineOfWS4 lineOfWS5
+global time_window
 
 %% STOP BUTTON DEFINITION
 set(handles.stopBtn, 'userdata', 0);                                       
@@ -330,26 +331,17 @@ if manualFlag == 0                                                         % Fla
             if agvArray(i,1).currentMission~=0
                  agvArray(i,1) = updateAGV(agvArray(i,1),t_stamp,patchArray(i,1),handles.axes_wh);
             else
-                agvArray(i,1).freeTime = agvArray(i,1).freeTime+t_stamp;
+                agvArray(i,1).freeTime = agvArray(i,1).freeTime + t_stamp;
             end
         end
         drawnow ;
     
 %%%%%%%%% DISPLAY CURRENT INFORMATION OF AGV
-%         if mod(int64(T),2) == 0
-%             if get(handles.trackingGUI,'UserData')           
-%                 trackingFrame = {};
-%                 if ~isempty(trackingName)                
-%                     for m = 1:size(trackingName)
-%                     temp10 = trackingName(m);
-%                     
-%                     data = [{agvArray(temp10,1).agvName} {agvArray(temp10,1).wsName} {agvArray(temp10,1).coordinateX} {agvArray(temp10,1).coordinateY} {agvArray(temp10,1).goalY} {agvArray(temp10,1).goalX}  ];                    
-%                     trackingFrame = cat(1,trackingFrame,data);
-%                     end                
-%                 end
-%                 set(table,'Data',trackingFrame);           
-%             end
-%          end
+        if mod(int64(T),20) == 0
+            if get(handles.trackingGUI,'UserData')           
+                set(table,'Data',time_window);           
+            end
+         end
 
 %%%%%%%%% DISPLAY AGV TRACKS
         if get(handles.chooseAGV,'userData') ~= 0
@@ -393,7 +385,7 @@ elseif manualFlag == 1
             end
             drawnow;
         end  
-        
+
 %%%%%%%%% REMOVE FINISH AGV 
         if ~isempty(deleteName) ==1
             for j = 1:size(deleteName)
